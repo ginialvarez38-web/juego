@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Theatrum Belli — Simulador Operacional</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <header id="topbar">
+    <div class="brand">THEATRVM<span>BELLI</span></div>
+    <div id="clock" class="chip"></div>
+    <div id="weather" class="chip"></div>
+    <div id="airstate" class="chip"></div>
+    <div class="spacer"></div>
+    <div id="scoreline"></div>
+    <button id="btn-endturn" class="primary">EJECUTAR TURNO ⏎</button>
+  </header>
+
+  <main id="stage">
+    <canvas id="map"></canvas>
+
+    <div id="overlay-legend" class="floating">
+      <div class="lg-title">CAPAS</div>
+      <label><input type="checkbox" id="ly-control" checked> Control territorial</label>
+      <label><input type="checkbox" id="ly-front" checked> Línea de frente</label>
+      <label><input type="checkbox" id="ly-supply"> Red de abastecimiento</label>
+      <label><input type="checkbox" id="ly-pockets" checked> Bolsas / cercos</label>
+      <label><input type="checkbox" id="ly-salients" checked> Salientes</label>
+      <label><input type="checkbox" id="ly-pincers" checked> Pinzas</label>
+      <label><input type="checkbox" id="ly-advance" checked> Vectores de avance</label>
+      <label><input type="checkbox" id="ly-threat"> Mapa de amenaza</label>
+      <label><input type="checkbox" id="ly-fog" checked> Niebla de guerra</label>
+      <label><input type="checkbox" id="ly-grid"> Retícula</label>
+    </div>
+
+    <div id="opsbox" class="floating"></div>
+    <div id="tooltip"></div>
+  </main>
+
+  <aside id="sidebar">
+    <nav id="tabs">
+      <button data-tab="unit" class="active">UNIDAD</button>
+      <button data-tab="army">EJÉRCITO</button>
+      <button data-tab="intel">INTEL</button>
+      <button data-tab="log">DIARIO</button>
+    </nav>
+    <section id="tab-unit" class="tabpane active"></section>
+    <section id="tab-army" class="tabpane"></section>
+    <section id="tab-intel" class="tabpane"></section>
+    <section id="tab-log" class="tabpane"></section>
+  </aside>
+
+  <footer id="statusbar">
+    <span id="hint">Clic: seleccionar · Clic derecho: orden · Rueda: zoom · Arrastrar: mover mapa · Espacio: siguiente unidad sin órdenes</span>
+    <span class="spacer"></span>
+    <span id="orderstate"></span>
+  </footer>
+
+</div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
