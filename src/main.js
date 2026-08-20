@@ -178,7 +178,7 @@ function checkEnd() {
         (${game.sides.BLUE.casualties.pow.toLocaleString('es')} prisioneros).<br>
         Rojas: ${game.sides.RED.casualties.total.toLocaleString('es')} bajas
         (${game.sides.RED.casualties.pow.toLocaleString('es')} prisioneros).</p>
-     <p><button onclick="location.reload()">Nueva campaña</button></p>`);
+     <p><button class="primary" data-act="restart">NUEVA CAMPAÑA</button></p>`);
 }
 
 // ─────────────────────────────── modal ───────────────────────────────
@@ -190,6 +190,12 @@ modal.addEventListener('click', e => { if (e.target === modal) modal.classList.r
 function showModal(title, html) {
   modal.querySelector('.box').innerHTML = `<h2>${title}</h2>${html}`;
   modal.classList.add('on');
+  // Los manejadores se enlazan aqui y no como atributos en linea: un atributo
+  // onclick depende de que la politica de contenido admita guion en linea.
+  const close = modal.querySelector('[data-act="close"]');
+  if (close) close.addEventListener('click', () => modal.classList.remove('on'));
+  const again = modal.querySelector('[data-act="restart"]');
+  if (again) again.addEventListener('click', () => location.reload());
 }
 
 if (new URLSearchParams(location.search).get('brief') !== '0') showModal('ORDEN DE OPERACIONES N.º 1', `
@@ -212,7 +218,7 @@ if (new URLSearchParams(location.search).get('brief') !== '0') showModal('ORDEN 
     <li>Un <b>saliente</b> con el cuello más estrecho que su profundidad es una bolsa esperando a ocurrir. El mapa te avisa de los tuyos y de los del enemigo.</li>
     <li>Cuando dos salientes propios convergen, el panel calcula qué fuerzas quedarían embolsadas al <b>cerrar la pinza</b>. Ése es el objetivo.</li>
   </ul>
-  <p style="margin-top:14px"><button onclick="document.getElementById('modal').classList.remove('on')">ASUMIR EL MANDO</button></p>
+  <p style="margin-top:18px"><button class="primary" data-act="close">ASUMIR EL MANDO</button></p>
 `);
 
 // Parametro de depuracion: ?auto=N resuelve N turnos con las dos partes bajo

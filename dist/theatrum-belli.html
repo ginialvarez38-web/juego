@@ -1,0 +1,4052 @@
+<title>Theatrum Belli</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap");
+:root{
+  --bg:#0d1013; --panel:#151a1f; --panel2:#1c232a; --line:#2a333c;
+  --ink:#d9e2ea; --dim:#8a97a3; --accent:#c8a24a;
+  --blue:#4a7fc1; --blue-d:#20344f; --red:#c05046; --red-d:#4a2320;
+  --ok:#5aa469; --warn:#d39a3a; --bad:#c0503f;
+  --mono:"IBM Plex Mono",ui-monospace,"DejaVu Sans Mono",Menlo,Consolas,monospace;
+  --sans:"Barlow","Segoe UI",system-ui,ui-sans-serif,sans-serif;
+  --cond:"Barlow Condensed","Barlow",system-ui,ui-sans-serif,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font:13.5px/1.5 var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased}
+.v,.st,#scoreline,#clock,#weather,#airstate,.bl,#statusbar{font-variant-numeric:tabular-nums}
+
+#app{display:grid;height:100vh;
+  grid-template-columns:1fr 372px;
+  grid-template-rows:44px 1fr 24px;
+  grid-template-areas:"top top" "stage side" "status status";}
+
+/* ---------- top ---------- */
+#topbar{grid-area:top;display:flex;align-items:center;gap:9px;padding:0 12px;min-width:0;
+  flex-wrap:nowrap;overflow:hidden;
+  background:linear-gradient(#1a2027,#12171c);border-bottom:1px solid var(--line)}
+#topbar>*{flex:0 0 auto}
+.brand{font-family:var(--cond);font-weight:600;letter-spacing:.22em;font-size:16px;color:var(--accent)}
+.brand span{color:var(--dim);margin-left:6px}
+.chip{font-family:var(--mono);font-size:11px;color:var(--dim);background:var(--panel2);
+  border:1px solid var(--line);border-radius:3px;padding:3px 8px;white-space:nowrap}
+.spacer{flex:1}
+#scoreline{font-family:var(--mono);font-size:11px;color:var(--dim);
+  flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#scoreline b{color:var(--ink)}
+button{font:inherit;color:var(--ink);background:var(--panel2);border:1px solid var(--line);
+  border-radius:3px;padding:5px 10px;cursor:pointer}
+button:hover{background:#26303a;border-color:#3b4854}
+button.primary{background:#2f4b2f;border-color:#4a6b4a;font-family:var(--cond);font-weight:600;font-size:13px;letter-spacing:.14em}
+button.primary:hover{background:#3c5f3c}
+button:disabled{opacity:.45;cursor:default}
+
+/* ---------- stage ---------- */
+#stage{grid-area:stage;position:relative;overflow:hidden;background:#0a0d10}
+#map{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+.floating{position:absolute;background:rgba(17,22,27,.93);border:1px solid var(--line);
+  border-radius:4px;padding:8px 10px;backdrop-filter:blur(3px)}
+#overlay-legend{left:10px;top:10px;font-size:11px;max-width:190px}
+#overlay-legend label{display:block;color:var(--dim);cursor:pointer;padding:1px 0}
+#overlay-legend label:hover{color:var(--ink)}
+#overlay-legend input{vertical-align:-1px;margin-right:5px}
+.lg-title{font-family:var(--cond);font-weight:600;font-size:12px;letter-spacing:.20em;color:var(--accent);margin-bottom:6px}
+
+#opsbox{right:10px;top:10px;width:262px;font-size:11px;max-height:calc(100% - 20px);overflow:auto}
+#opsbox .ops-h{font-family:var(--cond);font-weight:600;font-size:12px;letter-spacing:.20em;color:var(--accent);margin-bottom:7px}
+.ops-item{border-left:3px solid var(--line);padding:4px 0 4px 7px;margin-bottom:6px;color:var(--dim)}
+.ops-item b{display:block;color:var(--ink);font-family:var(--cond);font-weight:600;font-size:13px;
+  letter-spacing:.04em;line-height:1.15;margin-bottom:2px}
+.ops-item.k-pocket{border-color:#d4453a}
+.ops-item.k-salient{border-color:#d39a3a}
+.ops-item.k-pincer{border-color:#e0c04a}
+.ops-item.k-breach{border-color:#8a5ec0}
+.ops-item.k-supply{border-color:#3f8fa8}
+
+#tooltip{position:absolute;pointer-events:none;display:none;z-index:20;
+  background:rgba(10,14,18,.96);border:1px solid var(--line);border-radius:4px;
+  padding:6px 9px;font-family:var(--mono);font-size:11px;max-width:290px;white-space:pre-line}
+
+/* ---------- sidebar ---------- */
+#sidebar{grid-area:side;background:var(--panel);border-left:1px solid var(--line);
+  display:flex;flex-direction:column;overflow:hidden}
+#tabs{display:flex;border-bottom:1px solid var(--line);flex:0 0 auto}
+#tabs button{flex:1;border:0;border-radius:0;background:transparent;color:var(--dim);
+  font-family:var(--cond);font-weight:600;font-size:12.5px;letter-spacing:.16em;padding:9px 0}
+#tabs button.active{color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent);background:#11161b}
+.tabpane{display:none;overflow-y:auto;padding:10px;flex:1}
+.tabpane.active{display:block}
+
+.sec{border:1px solid var(--line);border-radius:4px;margin-bottom:9px;background:var(--panel2)}
+.sec>h4{margin:0;padding:6px 10px;font-family:var(--cond);font-weight:600;font-size:12.5px;letter-spacing:.16em;
+  color:var(--accent);border-bottom:1px solid var(--line);background:#191f25}
+.sec>div{padding:8px 9px}
+.row{display:flex;justify-content:space-between;gap:8px;padding:2px 0;font-size:11.5px}
+.row .k{color:var(--dim)}
+.row .v{font-family:var(--mono);text-align:right}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px}
+
+.bar{height:7px;background:#0c1015;border:1px solid #232c34;border-radius:2px;overflow:hidden;margin:3px 0 6px}
+.bar>i{display:block;height:100%}
+.bl{font-family:var(--mono);font-size:10px;color:var(--dim);display:flex;justify-content:space-between}
+
+.unit-head{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.unit-sym{width:42px;height:28px;flex:0 0 auto}
+.unit-name{font-family:var(--cond);font-weight:600;font-size:17px;letter-spacing:.02em;line-height:1.15}
+.unit-sub{font-family:var(--mono);font-size:10px;color:var(--dim)}
+
+.opts{display:flex;flex-wrap:wrap;gap:4px}
+.opts button{padding:4px 7px;font-size:11px}
+.opts button.on{background:#3a4d63;border-color:#5b7a99;color:#fff}
+.opts button.danger.on{background:#5e2b26;border-color:#8d4038}
+
+input[type=range]{width:100%;accent-color:var(--accent)}
+select{width:100%;background:#0f1418;color:var(--ink);border:1px solid var(--line);
+  border-radius:3px;padding:4px}
+.note{font-size:10.5px;color:var(--dim);line-height:1.35;margin-top:5px}
+.tag{display:inline-block;font-family:var(--mono);font-size:9.5px;padding:1px 5px;border-radius:2px;
+  border:1px solid var(--line);color:var(--dim);margin:2px 3px 0 0}
+.tag.bad{color:#e08a80;border-color:#6b3029;background:#2a1613}
+.tag.good{color:#8fce9d;border-color:#2f5237;background:#152218}
+.tag.warn{color:#e8be74;border-color:#6b5324;background:#241d10}
+
+#logfeed{font-family:var(--mono);font-size:10.5px;line-height:1.5}
+#logfeed .e{border-bottom:1px solid #1d242b;padding:4px 0;color:var(--dim)}
+#logfeed .e .t{color:#5d6b78;margin-right:6px}
+#logfeed .e.hi{color:var(--ink)}
+#logfeed .e.red{color:#e0938a}
+#logfeed .e.blue{color:#8fb6e6}
+#logfeed .e.big{color:var(--accent)}
+
+.oob-corps{margin-bottom:7px}
+.oob-corps>.h{font-family:var(--cond);font-weight:600;font-size:12.5px;letter-spacing:.08em;color:var(--accent);
+  border-bottom:1px solid var(--line);padding:3px 0;display:flex;justify-content:space-between;cursor:pointer}
+.oob-u{display:flex;gap:6px;align-items:center;padding:3px 2px;cursor:pointer;border-radius:2px;font-size:11px}
+.oob-u:hover{background:#222b33}
+.oob-u.sel{background:#2c3a49}
+.oob-u .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.oob-u .st{font-family:var(--mono);font-size:9.5px;color:var(--dim)}
+.dot{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
+
+/* ---------- status ---------- */
+#statusbar{grid-area:status;display:flex;align-items:center;gap:10px;padding:0 12px;
+  background:#11161b;border-top:1px solid var(--line);font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+#orderstate{color:var(--accent)}
+
+/* ---------- modal ---------- */
+#modal{position:fixed;inset:0;background:rgba(5,7,9,.86);display:none;z-index:60;
+  align-items:center;justify-content:center;padding:24px}
+#modal.on{display:flex}
+#modal .box{background:var(--panel);border:1px solid var(--line);border-radius:6px;
+  max-width:660px;padding:24px 28px;max-height:86vh;overflow:auto}
+#modal h2{margin:0 0 4px;font-family:var(--cond);font-weight:600;letter-spacing:.16em;color:var(--accent);font-size:22px}
+#modal h3{font-family:var(--cond);font-weight:600;font-size:14px;letter-spacing:.16em;color:var(--accent);margin:18px 0 5px}
+#modal p,#modal li{color:var(--dim);font-size:12.5px}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#2b343d;border-radius:5px}
+::-webkit-scrollbar-track{background:#0f1418}
+
+/* ---------- adaptacion a la pantalla ---------- */
+@media (max-width:1400px){
+  #app{grid-template-columns:1fr 340px}
+  #airstate{display:none}
+}
+@media (max-width:1150px){
+  #app{grid-template-columns:1fr 310px}
+  #scoreline{display:none}
+  #opsbox{width:230px}
+}
+@media (max-width:860px){
+  /* En pantalla estrecha el calco va arriba y la mesa de mando debajo. */
+  #app{grid-template-columns:1fr;grid-template-rows:44px minmax(0,58vh) minmax(0,1fr) 24px;
+    grid-template-areas:"top" "stage" "side" "status"}
+  #sidebar{border-left:0;border-top:1px solid var(--line)}
+  #weather{display:none}
+  /* El calco es pequeño: la leyenda pasa a barra y el parte de situación se
+     consulta en la pestaña INTEL, que lleva lo mismo. */
+  #overlay-legend{max-width:none;left:8px;right:8px;top:8px;
+    display:flex;flex-wrap:wrap;gap:1px 12px;font-size:11px;padding:6px 9px}
+  #overlay-legend .lg-title{width:100%;margin-bottom:3px}
+  #opsbox{display:none}
+  .brand{font-size:14px;letter-spacing:.14em}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+</style>
+
+<div id="app">
+
+  <header id="topbar">
+    <div class="brand">THEATRVM<span>BELLI</span></div>
+    <div id="clock" class="chip"></div>
+    <div id="weather" class="chip"></div>
+    <div id="airstate" class="chip"></div>
+    <div class="spacer"></div>
+    <div id="scoreline"></div>
+    <button id="btn-endturn" class="primary">EJECUTAR TURNO ⏎</button>
+  </header>
+
+  <main id="stage">
+    <canvas id="map"></canvas>
+
+    <div id="overlay-legend" class="floating">
+      <div class="lg-title">CAPAS</div>
+      <label><input type="checkbox" id="ly-control" checked> Control territorial</label>
+      <label><input type="checkbox" id="ly-front" checked> Línea de frente</label>
+      <label><input type="checkbox" id="ly-supply"> Red de abastecimiento</label>
+      <label><input type="checkbox" id="ly-pockets" checked> Bolsas / cercos</label>
+      <label><input type="checkbox" id="ly-salients" checked> Salientes</label>
+      <label><input type="checkbox" id="ly-pincers" checked> Pinzas</label>
+      <label><input type="checkbox" id="ly-advance" checked> Vectores de avance</label>
+      <label><input type="checkbox" id="ly-threat"> Mapa de amenaza</label>
+      <label><input type="checkbox" id="ly-fog" checked> Niebla de guerra</label>
+      <label><input type="checkbox" id="ly-grid"> Retícula</label>
+    </div>
+
+    <div id="opsbox" class="floating"></div>
+    <div id="tooltip"></div>
+  </main>
+
+  <aside id="sidebar">
+    <nav id="tabs">
+      <button data-tab="unit" class="active">UNIDAD</button>
+      <button data-tab="army">EJÉRCITO</button>
+      <button data-tab="intel">INTEL</button>
+      <button data-tab="log">DIARIO</button>
+    </nav>
+    <section id="tab-unit" class="tabpane active"></section>
+    <section id="tab-army" class="tabpane"></section>
+    <section id="tab-intel" class="tabpane"></section>
+    <section id="tab-log" class="tabpane"></section>
+  </aside>
+
+  <footer id="statusbar">
+    <span id="hint">Clic: seleccionar · Clic derecho: orden · Rueda: zoom · Arrastrar: mover mapa · Espacio: siguiente unidad sin órdenes</span>
+    <span class="spacer"></span>
+    <span id="orderstate"></span>
+  </footer>
+
+</div>
+
+
+<script>
+"use strict";
+const __M = {};
+
+/* ── heap.js ── */
+__M['heap'] = (function(){
+// Monticulo binario para las colas de prioridad de Dijkstra y A*.
+// Ordenar el array completo en cada extraccion hace impracticables las trazas
+// logisticas sobre un teatro de varios miles de hexagonos.
+class MinHeap {
+  constructor() { this.k = []; this.v = []; }
+  get size() { return this.k.length; }
+  push(key, val) {
+    const k = this.k, v = this.v;
+    k.push(key); v.push(val);
+    let i = k.length - 1;
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (k[p] <= k[i]) break;
+      [k[p], k[i]] = [k[i], k[p]];
+      [v[p], v[i]] = [v[i], v[p]];
+      i = p;
+    }
+  }
+  pop() {
+    const k = this.k, v = this.v, n = k.length;
+    if (n === 0) return undefined;
+    const top = v[0];
+    const lk = k.pop(), lv = v.pop();
+    if (n > 1) {
+      k[0] = lk; v[0] = lv;
+      let i = 0;
+      for (;;) {
+        const l = 2 * i + 1, r = l + 1;
+        let m = i;
+        if (l < k.length && k[l] < k[m]) m = l;
+        if (r < k.length && k[r] < k[m]) m = r;
+        if (m === i) break;
+        [k[m], k[i]] = [k[i], k[m]];
+        [v[m], v[i]] = [v[i], v[m]];
+        i = m;
+      }
+    }
+    return top;
+  }
+}
+
+return { MinHeap };
+})();
+
+/* ── hex.js ── */
+__M['hex'] = (function(){
+// Geometria hexagonal (offset odd-r, hexagonos "pointy-top").
+// Escala operacional: cada hexagono = 5 km entre lados opuestos.
+const HEX_KM = 5;
+
+// Direcciones: 0=E 1=NE 2=NO 3=O 4=SO 5=SE  (filas pares / impares)
+const ODDR = [
+  [[+1, 0], [0, -1], [-1, -1], [-1, 0], [-1, +1], [0, +1]],
+  [[+1, 0], [+1, -1], [0, -1], [-1, 0], [0, +1], [+1, +1]],
+];
+const DIR_NAME = ['E', 'NE', 'NO', 'O', 'SO', 'SE'];
+const OPPOSITE = [3, 4, 5, 0, 1, 2];
+
+function neighbor(col, row, d) {
+  const p = ODDR[row & 1][d];
+  return [col + p[0], row + p[1]];
+}
+function neighbors(col, row) {
+  const t = ODDR[row & 1];
+  return [
+    [col + t[0][0], row + t[0][1]], [col + t[1][0], row + t[1][1]],
+    [col + t[2][0], row + t[2][1]], [col + t[3][0], row + t[3][1]],
+    [col + t[4][0], row + t[4][1]], [col + t[5][0], row + t[5][1]],
+  ];
+}
+
+function toCube(col, row) {
+  const x = col - ((row - (row & 1)) / 2);
+  const z = row;
+  return [x, -x - z, z];
+}
+function fromCube(x, z) {
+  return [x + ((z - (z & 1)) / 2), z];
+}
+function distance(c1, r1, c2, r2) {
+  const a = toCube(c1, r1), b = toCube(c2, r2);
+  return (Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2])) / 2;
+}
+
+function cubeRound(x, y, z) {
+  let rx = Math.round(x), ry = Math.round(y), rz = Math.round(z);
+  const dx = Math.abs(rx - x), dy = Math.abs(ry - y), dz = Math.abs(rz - z);
+  if (dx > dy && dx > dz) rx = -ry - rz;
+  else if (dy > dz) ry = -rx - rz;
+  else rz = -rx - ry;
+  return [rx, ry, rz];
+}
+
+/** Hexagonos atravesados por el segmento A-B (para trazas de fuego, ejes, cierres de pinza). */
+function lineHexes(c1, r1, c2, r2) {
+  const n = distance(c1, r1, c2, r2);
+  if (n === 0) return [[c1, r1]];
+  const a = toCube(c1, r1), b = toCube(c2, r2), out = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const [x, , z] = cubeRound(
+      a[0] + (b[0] - a[0]) * t + 1e-6,
+      a[1] + (b[1] - a[1]) * t + 1e-6,
+      a[2] + (b[2] - a[2]) * t - 2e-6);
+    out.push(fromCube(x, z));
+  }
+  return out;
+}
+
+/** Todos los hexagonos a distancia <= rad. */
+function disc(col, row, rad) {
+  const out = [];
+  const [ax, , az] = toCube(col, row);
+  for (let dx = -rad; dx <= rad; dx++) {
+    for (let dz = Math.max(-rad, -dx - rad); dz <= Math.min(rad, -dx + rad); dz++) {
+      out.push(fromCube(ax + dx, az + dz));
+    }
+  }
+  return out;
+}
+
+function ring(col, row, rad) {
+  if (rad === 0) return [[col, row]];
+  const out = [];
+  let c = col, r = row;
+  for (let i = 0; i < rad; i++)[c, r] = neighbor(c, r, 4);
+  for (let d = 0; d < 6; d++) {
+    for (let i = 0; i < rad; i++) { out.push([c, r]);[c, r] = neighbor(c, r, d); }
+  }
+  return out;
+}
+
+// ---- pixeles (pointy-top, size = circunradio) ----
+const S3 = Math.sqrt(3);
+function hexToPixel(col, row, size) {
+  return [size * S3 * (col + 0.5 * (row & 1)), size * 1.5 * row];
+}
+function pixelToHex(x, y, size) {
+  const q = (S3 / 3 * x - y / 3) / size;
+  const r = (2 / 3 * y) / size;
+  const [rx, , rz] = cubeRound(q, -q - r, r);
+  return fromCube(rx, rz);
+}
+function hexCorners(cx, cy, size) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI / 180 * (60 * i - 30);
+    pts.push([cx + size * Math.cos(a), cy + size * Math.sin(a)]);
+  }
+  return pts;
+}
+
+return { neighbor, neighbors, toCube, fromCube, distance, lineHexes, disc, ring, hexToPixel, pixelToHex, hexCorners, HEX_KM, DIR_NAME, OPPOSITE };
+})();
+
+/* ── rng.js ── */
+__M['rng'] = (function(){
+// PRNG determinista (mulberry32) + ruido de valor para generacion de teatro.
+function makeRng(seed) {
+  let a = seed >>> 0;
+  const r = () => {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  r.int = (n) => Math.floor(r() * n);
+  r.range = (lo, hi) => lo + r() * (hi - lo);
+  r.pick = (arr) => arr[Math.floor(r() * arr.length)];
+  r.chance = (p) => r() < p;
+  r.gauss = (mu = 0, sd = 1) => {
+    const u = Math.max(1e-9, r()), v = r();
+    return mu + sd * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  };
+  r.shuffle = (arr) => {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(r() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  };
+  return r;
+}
+
+/** Ruido de valor fractal en rejilla, valores 0..1 */
+function noiseField(W, H, rng, octaves = 4, base = 6) {
+  const out = new Float32Array(W * H);
+  let amp = 1, tot = 0;
+  for (let o = 0; o < octaves; o++) {
+    const gw = Math.max(2, Math.ceil(W / (base * Math.pow(2, -o) === 0 ? 1 : base) * Math.pow(2, o))) + 1;
+    const gh = Math.max(2, Math.ceil(gw * H / W)) + 1;
+    const grid = new Float32Array(gw * gh);
+    for (let i = 0; i < grid.length; i++) grid[i] = rng();
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const fx = x / W * (gw - 1), fy = y / H * (gh - 1);
+        const x0 = Math.floor(fx), y0 = Math.floor(fy);
+        const tx = fx - x0, ty = fy - y0;
+        const sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
+        const g = (xx, yy) => grid[Math.min(gh - 1, yy) * gw + Math.min(gw - 1, xx)];
+        const v = (g(x0, y0) * (1 - sx) + g(x0 + 1, y0) * sx) * (1 - sy)
+          + (g(x0, y0 + 1) * (1 - sx) + g(x0 + 1, y0 + 1) * sx) * sy;
+        out[y * W + x] += v * amp;
+      }
+    }
+    tot += amp; amp *= 0.5;
+  }
+  for (let i = 0; i < out.length; i++) out[i] /= tot;
+  return out;
+}
+
+return { makeRng, noiseField };
+})();
+
+/* ── terrain.js ── */
+__M['terrain'] = (function(){
+// Definicion de terrenos. Los valores siguen la logica de los manuales de campana:
+// el terreno multiplica la potencia defensiva, limita el frente utilizable por el
+// atacante (canalizacion), fija el atrincheramiento maximo alcanzable y determina
+// el coste de movimiento y la distancia de observacion.
+const TERRAIN = {
+  llanura:   { name: 'Llanura',        move: 1.0, def: 1.00, atkFront: 1.00, entrenchMax: 4, sight: 4, cover: 0.05, color: '#5f6b46' },
+  cultivo:   { name: 'Campo cultivado',move: 1.1, def: 1.05, atkFront: 0.95, entrenchMax: 4, sight: 4, cover: 0.10, color: '#6e763f' },
+  bocage:    { name: 'Bocage',         move: 1.9, def: 1.55, atkFront: 0.55, entrenchMax: 5, sight: 2, cover: 0.40, color: '#4d6438' },
+  bosque:    { name: 'Bosque',         move: 1.8, def: 1.40, atkFront: 0.60, entrenchMax: 5, sight: 2, cover: 0.45, color: '#37502f' },
+  colinas:   { name: 'Colinas',        move: 1.5, def: 1.35, atkFront: 0.75, entrenchMax: 5, sight: 6, cover: 0.25, color: '#6d6449' },
+  montana:   { name: 'Montaña',        move: 2.6, def: 1.90, atkFront: 0.40, entrenchMax: 6, sight: 7, cover: 0.35, color: '#7b7367' },
+  pantano:   { name: 'Marisma',        move: 2.8, def: 1.15, atkFront: 0.35, entrenchMax: 1, sight: 3, cover: 0.15, color: '#3f5450' },
+  urbano:    { name: 'Zona urbana',    move: 1.6, def: 1.85, atkFront: 0.50, entrenchMax: 6, sight: 2, cover: 0.55, color: '#6a6a70' },
+  industrial:{ name: 'Complejo industrial', move: 1.7, def: 2.00, atkFront: 0.45, entrenchMax: 6, sight: 2, cover: 0.60, color: '#5c5a5f' },
+  agua:      { name: 'Lago',           move: 99,  def: 1.00, atkFront: 0.00, entrenchMax: 0, sight: 5, cover: 0.00, color: '#26404f' },
+};
+
+const WEATHER = {
+  despejado: { name: 'Despejado',   move: 1.00, sight: 1.00, air: 1.00, supply: 1.00 },
+  nublado:   { name: 'Nublado',     move: 1.00, sight: 0.85, air: 0.60, supply: 1.00 },
+  lluvia:    { name: 'Lluvia',      move: 1.25, sight: 0.65, air: 0.30, supply: 0.90 },
+  tormenta:  { name: 'Temporal',    move: 1.55, sight: 0.45, air: 0.05, supply: 0.75 },
+  niebla:    { name: 'Niebla',      move: 1.10, sight: 0.30, air: 0.10, supply: 0.95 },
+  nieve:     { name: 'Nieve',       move: 1.60, sight: 0.55, air: 0.25, supply: 0.70 },
+};
+
+// Estado del suelo: la "rasputitsa" es un factor operacional de primer orden.
+const GROUND = {
+  firme:  { name: 'Firme',    move: 1.00, offroad: 1.00 },
+  humedo: { name: 'Húmedo',   move: 1.15, offroad: 1.30 },
+  barro:  { name: 'Barro',    move: 1.45, offroad: 2.10 },
+  helado: { name: 'Helado',   move: 0.95, offroad: 0.90 },
+};
+
+return { TERRAIN, WEATHER, GROUND };
+})();
+
+/* ── units.js ── */
+__M['units'] = (function(){
+// Orden de batalla. Escalon operacional: la ficha es una division o brigada
+// independiente; el turno son 6 horas; el hexagono 5 km. Los efectivos, dotaciones
+// y consumos siguen ordenes de magnitud de una TOE mecanizada contemporanea.
+
+const POSTURES = {
+  asalto:      { name: 'Asalto deliberado', atk: 1.35, def: 0.65, cas: 1.55, ammo: 2.4, fuel: 1.5, entrench: -1.0, move: 0.5, fatigue: 2.3 },
+  ataque:      { name: 'Ataque',            atk: 1.00, def: 0.80, cas: 1.15, ammo: 1.6, fuel: 1.2, entrench: -0.5, move: 0.8, fatigue: 1.6 },
+  sondeo:      { name: 'Reconocimiento en fuerza', atk: 0.45, def: 0.95, cas: 0.55, ammo: 0.8, fuel: 1.0, entrench: 0, move: 1.0, fatigue: 1.0 },
+  avance:      { name: 'Marcha de aproximación', atk: 0.55, def: 0.70, cas: 0.75, ammo: 0.5, fuel: 1.6, entrench: 0, move: 1.35, fatigue: 1.2 },
+  defensa:     { name: 'Defensa móvil',     atk: 0.60, def: 1.15, cas: 0.85, ammo: 0.9, fuel: 0.8, entrench: 0.6, move: 0.7, fatigue: 0.8 },
+  fortificada: { name: 'Defensa firme',     atk: 0.25, def: 1.45, cas: 0.75, ammo: 0.8, fuel: 0.3, entrench: 1.4, move: 0.2, fatigue: 0.5 },
+  reserva:     { name: 'Reserva operativa', atk: 0.40, def: 0.90, cas: 0.60, ammo: 0.2, fuel: 0.4, entrench: 0.4, move: 1.0, fatigue: -0.6 },
+  retirada:    { name: 'Retirada / ruptura de contacto', atk: 0.10, def: 0.45, cas: 1.05, ammo: 0.4, fuel: 1.4, entrench: -1.5, move: 1.4, fatigue: 1.3 },
+};
+
+const DOCTRINES = {
+  profunda:  { name: 'Batalla en profundidad', exploit: 1.35, cohesion: 1.05, artyPrep: 1.15, defBonus: 0.90, c2: 1.10,
+    desc: 'Ruptura en un punto y explotación inmediata con escalones móviles hacia la retaguardia enemiga.' },
+  relampago: { name: 'Guerra relámpago',      exploit: 1.50, cohesion: 0.95, artyPrep: 0.85, defBonus: 0.85, c2: 1.25,
+    desc: 'Schwerpunkt estrecho, iniciativa delegada al mando local, tempo por encima de la consolidación.' },
+  desgaste:  { name: 'Desgaste metódico',     exploit: 0.75, cohesion: 1.15, artyPrep: 1.45, defBonus: 1.05, c2: 0.85,
+    desc: 'Preparación artillera masiva, avances cortos y consolidados. Menos riesgo, más bajas por kilómetro.' },
+  elastica:  { name: 'Defensa elástica',      exploit: 0.90, cohesion: 1.10, artyPrep: 1.00, defBonus: 1.30, c2: 1.00,
+    desc: 'Cede terreno para conservar fuerzas; contraataques de reserva contra el flanco del penetrante.' },
+};
+
+const T = (o) => Object.assign({
+  personnel: 10000, tanks: 0, ifv: 0, apc: 0, guns: 0, mlrs: 0, atgm: 0, aa: 0, trucks: 500,
+  soft: 1.0, hard: 0.5, def: 1.0, mp: 12, roadMp: 20, indRange: 2, recon: 1.0,
+  engineer: 0.2, entrenchRate: 1.0, cmdRadius: 0, logBoost: 0, exploit: 1.0, symbol: 'inf',
+}, o);
+
+const TEMPLATES = {
+  inf:      T({ name: 'División de Infantería',   personnel: 12800, apc: 140, guns: 54, atgm: 96, aa: 36, trucks: 950,
+                soft: 1.00, hard: 0.42, def: 1.20, mp: 11, roadMp: 20, entrenchRate: 1.25, symbol: 'inf' }),
+  mtz:      T({ name: 'División Motorizada',      personnel: 13400, tanks: 40, apc: 320, guns: 54, atgm: 72, aa: 30, trucks: 1500,
+                soft: 1.10, hard: 0.62, def: 1.10, mp: 15, roadMp: 30, exploit: 1.15, symbol: 'mtz' }),
+  mech:     T({ name: 'División Mecanizada',      personnel: 15200, tanks: 118, ifv: 262, guns: 72, atgm: 60, aa: 42, trucks: 1800,
+                soft: 1.30, hard: 1.05, def: 1.15, mp: 16, roadMp: 30, exploit: 1.30, symbol: 'mech' }),
+  arm:      T({ name: 'División Acorazada',       personnel: 11600, tanks: 296, ifv: 172, guns: 54, atgm: 24, aa: 36, trucks: 1600,
+                soft: 1.45, hard: 1.85, def: 1.00, mp: 18, roadMp: 34, exploit: 1.55, entrenchRate: 0.7, symbol: 'arm' }),
+  gd:       T({ name: 'División Acorazada de la Guardia', personnel: 12200, tanks: 320, ifv: 190, guns: 60, atgm: 24, aa: 40, trucks: 1700,
+                soft: 1.58, hard: 2.00, def: 1.05, mp: 18, roadMp: 34, exploit: 1.65, entrenchRate: 0.7, symbol: 'arm' }),
+  para:     T({ name: 'Brigada Paracaidista',     personnel: 4600, apc: 40, guns: 18, atgm: 54, aa: 18, trucks: 220,
+                soft: 0.55, hard: 0.20, def: 0.95, mp: 12, roadMp: 18, entrenchRate: 1.4, symbol: 'para' }),
+  mtn:      T({ name: 'Brigada de Montaña',       personnel: 5200, guns: 24, atgm: 48, aa: 12, trucks: 260,
+                soft: 0.60, hard: 0.22, def: 1.35, mp: 10, roadMp: 15, entrenchRate: 1.35, symbol: 'mtn' }),
+  arty:     T({ name: 'Brigada de Artillería',    personnel: 3400, guns: 96, mlrs: 18, aa: 12, trucks: 900,
+                soft: 0.35, hard: 0.20, def: 0.55, mp: 12, roadMp: 22, indRange: 3, symbol: 'arty' }),
+  rocket:   T({ name: 'Brigada de Cohetes',       personnel: 2400, mlrs: 54, aa: 8, trucks: 700,
+                soft: 0.25, hard: 0.15, def: 0.40, mp: 13, roadMp: 24, indRange: 5, symbol: 'rocket' }),
+  recon:    T({ name: 'Regimiento de Reconocimiento', personnel: 1900, tanks: 18, ifv: 64, guns: 12, aa: 6, trucks: 260,
+                soft: 0.32, hard: 0.28, def: 0.50, mp: 22, roadMp: 40, recon: 4.2, exploit: 1.4, symbol: 'recon' }),
+  eng:      T({ name: 'Brigada de Ingenieros',    personnel: 2900, apc: 60, trucks: 620,
+                soft: 0.18, hard: 0.10, def: 0.60, mp: 12, roadMp: 22, engineer: 3.5, entrenchRate: 2.6, symbol: 'eng' }),
+  aa:       T({ name: 'Brigada Antiaérea',        personnel: 2100, aa: 108, trucks: 420,
+                soft: 0.20, hard: 0.12, def: 0.50, mp: 13, roadMp: 24, symbol: 'aa' }),
+  log:      T({ name: 'Brigada Logística',        personnel: 2800, trucks: 2600,
+                soft: 0.06, hard: 0.03, def: 0.30, mp: 13, roadMp: 26, logBoost: 3.0, symbol: 'log' }),
+  corpsHQ:  T({ name: 'Cuartel General de Cuerpo', personnel: 1300, apc: 40, trucks: 300,
+                soft: 0.10, hard: 0.05, def: 0.45, mp: 14, roadMp: 26, cmdRadius: 9, recon: 1.5, symbol: 'hq' }),
+  armyHQ:   T({ name: 'Cuartel General de Ejército', personnel: 2200, apc: 60, trucks: 500,
+                soft: 0.12, hard: 0.06, def: 0.50, mp: 12, roadMp: 24, cmdRadius: 15, recon: 2.0, logBoost: 1.5, symbol: 'hq' }),
+};
+
+const ECHELON = { armyHQ: 'EJÉRCITO', corpsHQ: 'CUERPO', default: 'DIVISIÓN' };
+
+let _uid = 1;
+function makeUnit(side, type, col, row, name, hqId = null, opts = {}) {
+  const t = TEMPLATES[type];
+  const u = {
+    id: _uid++, side, type, name, hqId, col, row,
+    tpl: t,
+    personnel: t.personnel, personnelMax: t.personnel,
+    equip: { tanks: t.tanks, ifv: t.ifv, apc: t.apc, guns: t.guns, mlrs: t.mlrs, atgm: t.atgm, aa: t.aa, trucks: t.trucks },
+    equipMax: { tanks: t.tanks, ifv: t.ifv, apc: t.apc, guns: t.guns, mlrs: t.mlrs, atgm: t.atgm, aa: t.aa, trucks: t.trucks },
+
+    morale: 78, cohesion: 82, fatigue: 6, suppression: 0,
+    experience: opts.exp ?? 45, entrench: opts.entrench ?? 0,
+    ammo: 100, fuel: 100, stores: 100,     // porcentaje sobre dotacion de combate
+    supplyLevel: 100,                       // trazabilidad desde la base (0-100)
+    isolatedTurns: 0,
+
+    posture: 'defensa',
+    order: null,                            // { type, col, row, path, issuedTurn, activeTurn }
+    pending: null,                          // orden en transito por la cadena de mando
+    effort: 0.7,                            // intensidad de esfuerzo (consumo/bajas)
+    logPriority: 1,                         // 0 baja, 1 normal, 2 prioritaria
+    reservePct: 0.15,                       // fuerza retenida en segundo escalon
+    roeCasualty: 35,                        // se rompe contacto si bajas acumuladas > %
+    roeMorale: 25,                          // se rompe contacto si moral < %
+    artyMission: 'apoyo',                   // apoyo | contrabateria | interdiccion | preparacion
+    allowRetreat: true, digIn: true,
+
+    detected: 0, lastSeen: null, lastSeenTurn: -99,
+    status: 'ok', trail: [], engagedTurn: -9,
+    casualtiesTotal: 0, kills: 0, mpLeft: 0, movedThisTurn: 0,
+    combatLog: [],
+  };
+  return u;
+}
+
+/** Genera un ejercito completo desplegado en una banda vertical del mapa. */
+function buildArmy(world, side, rng, cfg) {
+  const { W, H } = world;
+  const units = [];
+  const corpsNames = cfg.corpsNames;
+  const rnum = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+  const ord = ['1.ª', '2.ª', '3.ª', '4.ª', '5.ª', '6.ª', '7.ª', '8.ª', '9.ª', '10.ª',
+    '11.ª', '12.ª', '13.ª', '14.ª', '15.ª', '16.ª', '17.ª', '18.ª', '19.ª', '20.ª'];
+  let divIdx = 0;
+
+  const free = (col, row) => {
+    const h = world.hexes[row * W + col];
+    return h && h.t !== 'agua' && h.t !== 'montana' && !units.some(u => u.col === col && u.row === row);
+  };
+  const place = (colWish, rowWish) => {
+    for (let r = 0; r < 60; r++) {
+      const c = Math.max(1, Math.min(W - 2, colWish + Math.round(rng.gauss(0, r * 0.25))));
+      const rr = Math.max(1, Math.min(H - 2, rowWish + Math.round(rng.gauss(0, 1 + r * 0.25))));
+      if (free(c, rr)) return [c, rr];
+    }
+    return [colWish, rowWish];
+  };
+
+  // Cuartel general de ejercito, en profundidad
+  const [ahc, ahr] = place(cfg.rearCol, Math.floor(H / 2));
+  const armyHQ = makeUnit(side, 'armyHQ', ahc, ahr, `${cfg.armyName}`, null, { exp: 70 });
+  armyHQ.posture = 'reserva';
+  units.push(armyHQ);
+
+  const nCorps = cfg.corps.length;
+  for (let ci = 0; ci < nCorps; ci++) {
+    const spec = cfg.corps[ci];
+    const bandTop = Math.floor(H * (ci / nCorps)) + 1;
+    const bandBot = Math.floor(H * ((ci + 1) / nCorps)) - 1;
+    const midRow = Math.floor((bandTop + bandBot) / 2);
+
+    const [hc, hr] = place(cfg.hqCol, midRow);
+    const hq = makeUnit(side, 'corpsHQ', hc, hr, `${rnum[ci]} Cuerpo «${corpsNames[ci]}»`, armyHQ.id, { exp: 60 });
+    hq.posture = 'reserva';
+    units.push(hq);
+
+    let slot = 0;
+    const span = Math.max(1, bandBot - bandTop);
+    for (const type of spec.line) {
+      const row = bandTop + Math.round(span * (slot + 0.5) / spec.line.length);
+      const [c, r] = place(cfg.frontCol + rng.int(2), row);
+      const nm = `${ord[divIdx++] || (divIdx + '.ª')} ${shortName(type)}`;
+      const u = makeUnit(side, type, c, r, nm, hq.id, { exp: 35 + rng.int(35), entrench: cfg.startEntrench });
+      u.posture = cfg.startPosture;
+      units.push(u); slot++;
+    }
+    for (const type of spec.support) {
+      const [c, r] = place(cfg.supportCol, midRow + rng.int(5) - 2);
+      const nm = `${ord[divIdx++] || (divIdx + '.ª')} ${shortName(type)}`;
+      const u = makeUnit(side, type, c, r, nm, hq.id, { exp: 40 + rng.int(30) });
+      u.posture = type === 'arty' || type === 'rocket' ? 'defensa' : 'reserva';
+      units.push(u);
+    }
+  }
+  // Reserva de ejercito (los escalones de explotacion)
+  for (const type of cfg.reserve) {
+    const [c, r] = place(cfg.reserveCol, 3 + rng.int(H - 6));
+    const nm = `${ord[divIdx++] || (divIdx + '.ª')} ${shortName(type)}`;
+    const u = makeUnit(side, type, c, r, nm, armyHQ.id, { exp: 50 + rng.int(30) });
+    u.posture = 'reserva';
+    units.push(u);
+  }
+  return units;
+}
+
+function shortName(type) {
+  return {
+    inf: 'División de Infantería', mtz: 'División Motorizada', mech: 'División Mecanizada',
+    arm: 'División Acorazada', gd: 'División Acorazada de la Guardia', para: 'Brigada Paracaidista',
+    mtn: 'Brigada de Montaña', arty: 'Brigada de Artillería', rocket: 'Brigada de Cohetes',
+    recon: 'Regimiento de Reconocimiento', eng: 'Brigada de Ingenieros', aa: 'Brigada Antiaérea',
+    log: 'Brigada Logística',
+  }[type] || TEMPLATES[type].name;
+}
+
+function unitStrengthFrac(u) { return u.personnel / u.personnelMax; }
+
+function equipFrac(u) {
+  let cur = 0, max = 0;
+  for (const k of ['tanks', 'ifv', 'apc', 'guns', 'mlrs', 'atgm', 'aa']) {
+    cur += u.equip[k]; max += u.equipMax[k];
+  }
+  return max > 0 ? cur / max : 1;
+}
+
+return { makeUnit, buildArmy, unitStrengthFrac, equipFrac, POSTURES, DOCTRINES, TEMPLATES, ECHELON };
+})();
+
+/* ── orders.js ── */
+__M['orders'] = (function(){
+// Emision de ordenes a traves de la cadena de mando.
+// Una orden no es instantanea: viaja del CG a la division y tarda en funcion de la
+// distancia, del radio de mando del cuartel y de la doctrina de control (la orden
+// tipo misión de la doctrina relámpago llega antes que la orden detallada).
+const { distance } = __M['hex'];
+const { DOCTRINES } = __M['units'];
+
+function c2Delay(game, u) {
+  const hq = u.hqId ? game.byId[u.hqId] : null;
+  const D = DOCTRINES[game.sides[u.side].doctrine];
+  let delay;
+  if (hq && hq.status !== 'destroyed') {
+    const d = distance(u.col, u.row, hq.col, hq.row);
+    delay = Math.max(0, Math.round((d - hq.tpl.cmdRadius * 0.5) / (5 * D.c2)));
+    if (d > hq.tpl.cmdRadius) delay += 1;
+  } else delay = 2;
+  if (u.supplyLevel < 10) delay += 1;
+  if (u.status === 'routed') delay += 1;
+  return delay;
+}
+
+const same = (a, b) => a && b && a.type === b.type && a.col === b.col && a.row === b.row;
+
+function issueOrder(game, u, o) {
+  // Repetir una orden ya cursada no reinicia su transmision: si no fuese asi,
+  // un mando que insiste cada turno dejaria a la unidad esperando para siempre.
+  if (same(u.pending, o)) return u.pending.activeTurn - game.turn;
+  if (same(u.order, o) && !u.pending) return 0;
+  o.issuedTurn = game.turn;
+  const d = c2Delay(game, u);
+  o.activeTurn = game.turn + d;
+  if (d <= 0) { u.order = o; u.pending = null; }
+  else { u.pending = o; }
+  return d;
+}
+
+function clearOrder(u) { u.order = null; u.pending = null; }
+
+return { c2Delay, issueOrder, clearOrder };
+})();
+
+/* ── worldgen.js ── */
+__M['worldgen'] = (function(){
+// Generacion del teatro de operaciones: relieve, hidrografia, red de comunicaciones
+// y nucleos de poblacion. El mapa no es decorativo: rios, carreteras y ciudades
+// definen los ejes de avance posibles y por tanto la forma que tomaran los frentes.
+const { neighbors, neighbor, distance, OPPOSITE, disc } = __M['hex'];
+const { noiseField } = __M['rng'];
+const { MinHeap } = __M['heap'];
+
+const NOMBRES = ['Vashen', 'Korlau', 'Drenitz', 'Saloka', 'Belmar', 'Ostrog', 'Tarnov', 'Kresna',
+  'Alvédar', 'Miroslav', 'Pászt', 'Rehden', 'Vinograd', 'Zelena', 'Hochbrück', 'Lemburg',
+  'Novaya', 'Stanov', 'Ferrada', 'Kaltbach', 'Ordanz', 'Bielsk', 'Marnau', 'Sertol'];
+
+function generateTheater(W, H, rng) {
+  const N = W * H;
+  const hexes = new Array(N);
+  const elevN = noiseField(W, H, rng, 5, 5);
+  const forestN = noiseField(W, H, rng, 4, 9);
+  const wetN = noiseField(W, H, rng, 3, 7);
+
+  for (let row = 0; row < H; row++) {
+    for (let col = 0; col < W; col++) {
+      const i = row * W + col;
+      // Cordillera suave hacia los bordes N y S -> canaliza la maniobra al centro.
+      const edgeBias = Math.pow(Math.abs(row - (H - 1) / 2) / ((H - 1) / 2), 2.2);
+      const e = Math.min(1, elevN[i] * 0.78 + edgeBias * 0.55);
+      let t = 'llanura';
+      if (e > 0.80) t = 'montana';
+      else if (e > 0.62) t = 'colinas';
+      else if (forestN[i] > 0.62) t = e > 0.5 ? 'bosque' : 'bocage';
+      else if (wetN[i] > 0.76 && e < 0.42) t = 'pantano';
+      else if (forestN[i] < 0.34) t = 'cultivo';
+      hexes[i] = {
+        i, col, row, t, elev: e,
+        river: [false, false, false, false, false, false],
+        bridge: [false, false, false, false, false, false],
+        road: 0, rail: false, city: null, vp: 0, name: null,
+        blown: false,
+      };
+    }
+  }
+
+  const at = (c, r) => (c < 0 || r < 0 || c >= W || r >= H) ? null : hexes[r * W + c];
+
+  // ---- Hidrografia: dos rios principales de N a S con meandros ----
+  const rivers = [];
+  for (let k = 0; k < 2; k++) {
+    let col = Math.floor(W * (k === 0 ? 0.34 : 0.68) + rng.gauss(0, 2));
+    const path = [];
+    for (let row = 0; row < H; row++) {
+      col += Math.round(rng.gauss(0, 0.85));
+      col = Math.max(2, Math.min(W - 3, col));
+      path.push([col, row]);
+    }
+    rivers.push(path);
+    for (let n = 0; n < path.length - 1; n++) {
+      const [c1, r1] = path[n], [c2, r2] = path[n + 1];
+      const h = at(c1, r1); if (!h) continue;
+      // marcar el lado del hexagono cruzado por el cauce
+      const nb = neighbors(c1, r1);
+      for (let d = 0; d < 6; d++) {
+        if (nb[d][0] === c2 && nb[d][1] === r2) {
+          h.river[d] = true;
+          const o = at(c2, r2); if (o) o.river[OPPOSITE[d]] = true;
+        }
+      }
+      // ribera: los laterales tambien son obstaculo
+      for (const d of [0, 3]) {
+        const [nc, nr] = neighbor(c1, r1, d);
+        const o = at(nc, nr);
+        if (o) { h.river[d] = true; o.river[OPPOSITE[d]] = true; }
+      }
+      if (h.t === 'montana') h.t = 'colinas';
+    }
+  }
+
+  // ---- Ciudades y valor operacional ----
+  const cities = [];
+  const nombres = rng.shuffle([...NOMBRES]);
+  const tryCity = (col, row, size, vp) => {
+    const h = at(col, row);
+    if (!h || h.t === 'montana' || h.t === 'pantano') return null;
+    for (const c of cities) if (distance(c.col, c.row, col, row) < 5) return null;
+    h.t = size >= 3 ? 'urbano' : 'urbano';
+    h.city = { name: nombres.pop() || ('Punto ' + cities.length), size };
+    h.name = h.city.name; h.vp = vp;
+    if (size >= 3) {
+      for (const [nc, nr] of neighbors(col, row)) {
+        const o = at(nc, nr);
+        if (o && o.t !== 'agua' && rng.chance(0.55)) o.t = rng.chance(0.4) ? 'industrial' : 'urbano';
+      }
+    }
+    cities.push({ col, row, size, vp, name: h.city.name });
+    return h;
+  };
+  // capitales de teatro en ambos extremos + objetivos intermedios
+  tryCity(4, Math.floor(H / 2), 4, 30);
+  tryCity(W - 5, Math.floor(H / 2), 4, 30);
+  for (let n = 0; n < 16; n++) {
+    tryCity(3 + rng.int(W - 6), 2 + rng.int(H - 4), 1 + rng.int(3), 4 + rng.int(10));
+  }
+
+  // ---- Red de comunicaciones: une ciudades por el camino de menor coste ----
+  const carve = (a, b, grade) => {
+    const path = roadPath(hexes, W, H, a, b);
+    if (!path) return;
+    for (let n = 0; n < path.length; n++) {
+      const h = hexes[path[n]];
+      h.road = Math.max(h.road, grade);
+      if (grade >= 2) h.rail = true;
+      if (n > 0) { // puente donde la calzada cruza el cauce
+        const p = hexes[path[n - 1]];
+        const nb = neighbors(p.col, p.row);
+        for (let d = 0; d < 6; d++) {
+          if (nb[d][0] === h.col && nb[d][1] === h.row && p.river[d]) {
+            p.bridge[d] = true; h.bridge[OPPOSITE[d]] = true;
+          }
+        }
+      }
+    }
+  };
+  const sorted = [...cities].sort((a, b) => a.col - b.col);
+  for (let n = 0; n < sorted.length - 1; n++) carve(sorted[n], sorted[n + 1], 1);
+  // eje principal oeste-este (linea de comunicaciones estrategica)
+  const spine = sorted.filter(c => Math.abs(c.row - H / 2) < H * 0.30);
+  for (let n = 0; n < spine.length - 1; n++) carve(spine[n], spine[n + 1], 2);
+  for (const c of cities) {
+    const near = cities.filter(o => o !== c && distance(o.col, o.row, c.col, c.row) < 14);
+    for (const o of near.slice(0, 2)) carve(c, o, 1);
+  }
+  // ramales laterales para dar profundidad logistica
+  for (let n = 0; n < 6; n++) {
+    const a = rng.pick(cities), b = rng.pick(cities);
+    if (a !== b) carve(a, b, 1);
+  }
+
+  return { W, H, hexes, cities, rivers };
+}
+
+/** Dijkstra simple sobre coste de construccion (evita montana, pantano y rios). */
+function roadPath(hexes, W, H, a, b) {
+  const N = W * H, dist = new Float32Array(N).fill(Infinity), prev = new Int32Array(N).fill(-1);
+  const start = a.row * W + a.col, goal = b.row * W + b.col;
+  dist[start] = 0;
+  const pq = new MinHeap();
+  pq.push(0, start);
+  while (pq.size) {
+    const cur = pq.pop();
+    const d = dist[cur];
+    if (cur === goal) break;
+    const h = hexes[cur];
+    const nb = neighbors(h.col, h.row);
+    for (let k = 0; k < 6; k++) {
+      const [nc, nr] = nb[k];
+      if (nc < 0 || nr < 0 || nc >= W || nr >= H) continue;
+      const j = nr * W + nc, o = hexes[j];
+      let c = 1;
+      if (o.t === 'montana') c = 7; else if (o.t === 'pantano') c = 6;
+      else if (o.t === 'bosque' || o.t === 'bocage') c = 2.2; else if (o.t === 'colinas') c = 1.8;
+      if (h.river[k]) c += 4;
+      if (o.road) c *= 0.35;
+      const nd = d + c;
+      if (nd < dist[j]) { dist[j] = nd; prev[j] = cur; pq.push(nd, j); }
+    }
+  }
+  if (prev[goal] < 0 && goal !== start) return null;
+  const out = []; let cur = goal;
+  while (cur !== -1) { out.push(cur); if (cur === start) break; cur = prev[cur]; }
+  return out.reverse();
+}
+
+/**
+ * Bases logisticas de teatro: cabezas de ferrocarril sobre el borde propio.
+ * Cada cabeza se prolonga hacia el interior con un troncal ferroviario hasta la
+ * zona de retaguardia del ejercito, y una lateral las une entre si. Sin este
+ * esqueleto la traza tendria que hacerse campo a traves y el alcance operacional
+ * de cualquier despliegue seria ridiculo.
+ */
+function assignSupplyBases(world, side, edge, depthFrac = 0.30) {
+  const { W, H, hexes } = world;
+  const bases = [];
+  const col = edge === 'W' ? 0 : W - 1;
+  const depth = Math.round(W * depthFrac);
+  const inward = (k) => (edge === 'W' ? k : W - 1 - k);
+
+  for (let row = 2; row < H - 2; row += 5) {
+    const h = hexes[row * W + col];
+    h.rail = true; h.road = Math.max(h.road, 2); h.depot = side;
+    bases.push(h.i);
+    // troncal hacia el interior (esquiva agua bajando de fila si hace falta)
+    let r = row;
+    for (let k = 1; k <= depth; k++) {
+      let o = hexes[r * W + inward(k)];
+      if (o && o.t === 'agua') {
+        const alt = hexes[(r + (r < H / 2 ? 1 : -1)) * W + inward(k)];
+        if (alt && alt.t !== 'agua') { o = alt; r = alt.row; }
+      }
+      if (!o) break;
+      o.rail = true; o.road = Math.max(o.road, 2);
+      if (o.t === 'agua') break;
+      // puente en el troncal donde cruza un cauce
+      const prev = hexes[bases.length ? r * W + inward(k - 1) : o.i];
+      if (prev) {
+        const nb = neighbors(prev.col, prev.row);
+        for (let d = 0; d < 6; d++) {
+          if (nb[d][0] === o.col && nb[d][1] === o.row && prev.river[d]) {
+            prev.bridge[d] = true; o.bridge[OPPOSITE[d]] = true;
+          }
+        }
+      }
+    }
+  }
+  // lateral de retaguardia: une todas las cabezas por la columna del borde
+  for (let row = 2; row < H - 2; row++) {
+    const h = hexes[row * W + col];
+    if (h && h.t !== 'agua') { h.rail = true; h.road = Math.max(h.road, 1); }
+  }
+  return bases;
+}
+
+function hexLabel(h) {
+  return h.city ? h.city.name : `${String.fromCharCode(65 + (h.col % 26))}${h.col}-${h.row}`;
+}
+
+
+
+return { disc, generateTheater, assignSupplyBases, hexLabel };
+})();
+
+/* ── sim.js ── */
+__M['sim'] = (function(){
+// Motor de simulacion operacional.
+//
+// Principios modelados (ver README para las fuentes doctrinales):
+//  · Potencia de combate = masa x calidad x factores humanos x sostenimiento.
+//  · La ventaja defensiva del terreno y el atrincheramiento son multiplicadores,
+//    no sumas: por eso la relacion de fuerzas ~3:1 aparece sola como umbral de
+//    exito del asalto en llano y sube a 6:1 contra posiciones urbanas preparadas.
+//  · El abastecimiento se traza por la red de comunicaciones y lo interrumpen las
+//    zonas de control enemigas: de ahi que un cerco mate por logistica, no por fuego.
+//  · Una unidad sin hexagono de retirada disponible sufre bajas dobles y termina
+//    capitulando: la mecanica que convierte una pinza cerrada en una bolsa.
+const { neighbors, neighbor, distance, disc, lineHexes, OPPOSITE, HEX_KM } = __M['hex'];
+const { TERRAIN, WEATHER, GROUND } = __M['terrain'];
+const { POSTURES, DOCTRINES, TEMPLATES } = __M['units'];
+const { MinHeap } = __M['heap'];
+
+const SIDES = ['BLUE', 'RED'];
+const other = (s) => (s === 'BLUE' ? 'RED' : 'BLUE');
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+
+// ───────────────────────────── potencia de combate ─────────────────────────────
+
+/** Multiplicador de factores humanos y de sostenimiento (0..~1.4). */
+function readiness(u) {
+  const mor = 0.35 + 0.65 * (u.morale / 100);
+  const coh = 0.55 + 0.45 * (u.cohesion / 100);
+  const fat = 1 - 0.42 * (u.fatigue / 100);
+  const sup = 0.25 + 0.75 * Math.min(1, u.ammo / 70);
+  const sup2 = 0.60 + 0.40 * Math.min(1, u.fuel / 60);
+  const exp = 0.80 + 0.40 * (u.experience / 100);
+  const shock = 1 - 0.55 * (u.suppression / 100);
+  return Math.max(0.02, mor * coh * fat * sup * sup2 * exp * shock);
+}
+
+/** Potencia bruta de fuego de la unidad, ponderando personal y material. */
+function rawPower(u, vsArmor = 0.35) {
+  const t = u.tpl;
+  const men = u.personnel / Math.max(1, u.personnelMax);
+  const e = u.equip;
+  const mat =
+    (e.tanks * 3.0 + e.ifv * 1.1 + e.apc * 0.35 + e.guns * 1.6 + e.mlrs * 2.4 + e.atgm * 0.7) / 100;
+  const base = t.personnel / 1000 * (t.soft * (1 - vsArmor) + t.hard * vsArmor);
+  return Math.max(0.1, base * (0.55 * men + 0.45 * Math.min(1.2, mat / Math.max(0.1, tplMat(t)))));
+}
+function tplMat(t) {
+  return (t.tanks * 3.0 + t.ifv * 1.1 + t.apc * 0.35 + t.guns * 1.6 + t.mlrs * 2.4 + t.atgm * 0.7) / 100 || 0.3;
+}
+
+/** Proporcion acorazada del defensor: determina que mezcla de fuego es eficaz. */
+function armorShare(units) {
+  let t = 0, m = 0;
+  for (const u of units) { t += u.equip.tanks + u.equip.ifv * 0.4; m += u.personnel / 1000; }
+  return clamp(t / Math.max(1, t + m * 8), 0.05, 0.85);
+}
+
+function combatPower(u, game, role, ctx = {}) {
+  const h = game.hexes[u.row * game.W + u.col];
+  const T = TERRAIN[h.t];
+  const P = POSTURES[u.posture];
+  const D = DOCTRINES[game.sides[u.side].doctrine];
+  let p = rawPower(u, ctx.armorShare ?? 0.35) * readiness(u);
+
+  const reserveHeld = 1 - u.reservePct * 0.8;
+  p *= reserveHeld;
+  p *= 0.55 + 0.45 * u.effort;
+
+  if (role === 'attack') {
+    p *= P.atk;
+    p *= T.atkFront;                                   // frente utilizable / canalizacion
+    if (!inCommand(u, game)) p *= 0.78;                // sin coordinacion superior
+    p *= (game.sides[u.side].airSuperiority > 0 ? 1 + game.sides[u.side].airSuperiority * 0.08 : 1);
+  } else {
+    p *= P.def;
+    p *= T.def;
+    p *= 1 + u.entrench * 0.16;                        // trincheras, obstaculos, campos de tiro
+    p *= D.defBonus;
+    if (h.city) p *= 1 + Math.min(0.35, h.city.size * 0.09);
+  }
+  return p;
+}
+
+function inCommand(u, game) {
+  if (!u.hqId) return true;
+  const hq = game.byId[u.hqId];
+  if (!hq || hq.status === 'destroyed') return false;
+  return distance(u.col, u.row, hq.col, hq.row) <= hq.tpl.cmdRadius;
+}
+
+// ───────────────────────────── zonas de control ─────────────────────────────
+
+function projectsZOC(u) {
+  if (u.status === 'destroyed' || u.status === 'routed') return false;
+  if (u.tpl.cmdRadius > 0 || u.tpl.logBoost >= 3) return false;   // CG y logistica no fijan frente
+  return u.personnel / u.personnelMax > 0.18 && u.morale > 18;
+}
+
+function computeZOC(game) {
+  const z = { BLUE: new Uint8Array(game.N), RED: new Uint8Array(game.N) };
+  for (const u of game.units) {
+    if (u.status === 'destroyed') continue;
+    if (!projectsZOC(u)) continue;
+    z[u.side][u.row * game.W + u.col] = 2;
+    for (const [c, r] of neighbors(u.col, u.row)) {
+      if (c < 0 || r < 0 || c >= game.W || r >= game.H) continue;
+      const i = r * game.W + c;
+      if (z[u.side][i] < 1) z[u.side][i] = 1;
+    }
+  }
+  return z;
+}
+
+function occupancy(game) {
+  const occ = new Int32Array(game.N).fill(-1);
+  const list = new Array(game.N);
+  for (const u of game.units) {
+    if (u.status === 'destroyed') continue;
+    const i = u.row * game.W + u.col;
+    occ[i] = u.side === 'BLUE' ? 0 : 1;
+    (list[i] || (list[i] = [])).push(u);
+  }
+  return { occ, list };
+}
+
+// ───────────────────────────── movimiento ─────────────────────────────
+
+function moveCost(game, from, to, dir, u) {
+  const h = game.hexes[to];
+  const T = TERRAIN[h.t];
+  if (h.t === 'agua') return Infinity;
+  const g = GROUND[game.weather.ground], w = WEATHER[game.weather.type];
+  const src = game.hexes[from];
+  const onRoad = src.road > 0 && h.road > 0;
+  let c = onRoad ? (h.road >= 2 ? 0.5 : 0.75) * g.move : T.move * g.offroad * w.move;
+  // cauces: sin puente el paso exige medios de asalto
+  if (src.river[dir] && !src.bridge[dir]) {
+    c += onRoad ? 1.0 : 4.5 / (1 + u.tpl.engineer);
+  }
+  if (u.fuel < 25) c *= 1.5;
+  return c;
+}
+
+/** A* con coste de movimiento y penalizacion por zonas de control enemigas. */
+function findPath(game, u, goalCol, goalRow, zoc) {
+  const W = game.W, H = game.H;
+  const start = u.row * W + u.col, goal = goalRow * W + goalCol;
+  const ez = zoc[other(u.side)], fz = zoc[u.side];
+  const { occ } = game._occ;
+  const mySide = u.side === 'BLUE' ? 0 : 1;
+  const g = new Float32Array(game.N).fill(Infinity);
+  const prev = new Int32Array(game.N).fill(-1);
+  g[start] = 0;
+  const open = new MinHeap();
+  open.push(0, start);
+  const hEst = (i) => distance(i % W, (i / W) | 0, goalCol, goalRow) * 0.75;
+  let iter = 0;
+  while (open.size && iter++ < 40000) {
+    const cur = open.pop();
+    if (cur === goal) break;
+    const cc = cur % W, cr = (cur / W) | 0;
+    const nb = neighbors(cc, cr);
+    for (let d = 0; d < 6; d++) {
+      const [nc, nr] = nb[d];
+      if (nc < 0 || nr < 0 || nc >= W || nr >= H) continue;
+      const j = nr * W + nc;
+      if (occ[j] >= 0 && occ[j] !== mySide) continue;             // hexagono ocupado por el enemigo
+      let c = moveCost(game, cur, j, d, u);
+      if (!isFinite(c)) continue;
+      // Regla de zonas de control: entrar en la ZDC contraria cuesta y detiene la
+      // marcha; pasar directamente de una ZDC a otra esta prohibido salvo que la
+      // casilla de destino este cubierta por tropa propia. Sin esta regla los
+      // ejercitos se atraviesan y no llega a formarse frente alguno.
+      if (ez[cur] && ez[j] && fz[j] < 2) continue;
+      if (ez[j] && occ[j] < 0) c += 3.0;
+      const ng = g[cur] + c;
+      if (ng < g[j]) { g[j] = ng; prev[j] = cur; open.push(ng + hEst(j), j); }
+    }
+  }
+  if (prev[goal] < 0 && goal !== start) return null;
+  const out = []; let cur = goal;
+  while (cur !== -1 && cur !== start) { out.push(cur); cur = prev[cur]; }
+  return out.reverse();
+}
+
+function maxMP(u, game) {
+  const P = POSTURES[u.posture];
+  const w = WEATHER[game.weather.type];
+  const fuelF = u.fuel > 40 ? 1 : 0.3 + 0.7 * (u.fuel / 40);
+  const fatF = 1 - 0.35 * (u.fatigue / 100);
+  const supF = 1 - 0.4 * (u.suppression / 100);
+  return u.tpl.mp * P.move * fuelF * fatF * supF / w.move;
+}
+
+// ───────────────────────────── abastecimiento ─────────────────────────────
+
+/**
+ * Traza logistica: Dijkstra multi-origen desde las bases de teatro por la red de
+ * comunicaciones. Las ZDC enemigas no ocupadas por unidad propia cortan la traza.
+ * Las brigadas logisticas alcanzadas actuan como deposito avanzado, extendiendo
+ * el alcance operacional; el limite del presupuesto es el punto culminante.
+ */
+function computeSupply(game, side) {
+  const W = game.W, H = game.H, N = game.N;
+  const cost = new Float32Array(N).fill(Infinity);
+  const zoc = game._zoc, { occ } = game._occ;
+  const ez = zoc[other(side)], fz = zoc[side];
+  const mySide = side === 'BLUE' ? 0 : 1;
+  const S = game.sides[side];
+  const interdict = 1 + S.interdictedBy * 0.9;
+  const wsup = WEATHER[game.weather.type].supply;
+
+  const pq = new MinHeap();
+  for (const i of S.bases) { cost[i] = 0; pq.push(0, i); }
+
+  const budget = S.logRange * wsup;
+  const logDepots = game.units.filter(u => u.side === side && u.tpl.logBoost >= 3 && u.status !== 'destroyed');
+  const usedDepot = new Set();
+
+  const relax = () => {
+    while (pq.size) {
+      const cur = pq.pop();
+      const d = cost[cur];
+      if (d > budget) continue;
+      const cc = cur % W, cr = (cur / W) | 0;
+      const nb = neighbors(cc, cr);
+      for (let k = 0; k < 6; k++) {
+        const [nc, nr] = nb[k];
+        if (nc < 0 || nr < 0 || nc >= W || nr >= H) continue;
+        const j = nr * W + nc;
+        const h = game.hexes[j];
+        if (h.t === 'agua') continue;
+        if (occ[j] >= 0 && occ[j] !== mySide) continue;             // el enemigo corta la ruta
+        if (ez[j] && occ[j] < 0 && fz[j] < 2) continue;             // ZDC enemiga sin cobertura propia
+        // El coste de la traza es el de la red: el ferrocarril es casi gratis, la
+        // carretera barata y el campo a traves caro. De ahi que el alcance
+        // operacional siga las lineas de comunicaciones y no un radio.
+        let c = h.rail ? 0.30 : h.road >= 2 ? 0.60 : h.road === 1 ? 0.95 : TERRAIN[h.t].move * 2.4;
+        // El estado del suelo encarece la traza, pero menos que la marcha: los
+        // convoyes van por la red y no campo a traves.
+        c *= 0.6 + 0.4 * GROUND[game.weather.ground].move;
+        const src = game.hexes[cur];
+        if (src.river[k] && !src.bridge[k]) c += 3.0;
+        if (ez[j]) c += 1.2;                                        // presion sobre la linea de comunicaciones
+        c *= interdict;
+        const nd = d + c;
+        if (nd < cost[j]) { cost[j] = nd; pq.push(nd, j); }
+      }
+    }
+  };
+  relax();
+  // depositos avanzados: reinyectan capacidad si estan enlazados
+  for (let pass = 0; pass < 2; pass++) {
+    let added = false;
+    for (const L of logDepots) {
+      const i = L.row * W + L.col;
+      if (usedDepot.has(L.id)) continue;
+      if (cost[i] <= budget && L.stores > 20) {
+        usedDepot.add(L.id);
+        const nc = Math.max(0, cost[i] - budget * 0.45 * (L.stores / 100));
+        if (nc < cost[i]) { cost[i] = nc; pq.push(nc, i); added = true; }
+      }
+    }
+    if (!added) break;
+    relax();
+  }
+
+  const lvl = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    lvl[i] = isFinite(cost[i]) ? clamp(100 * (1 - cost[i] / budget), 0, 100) : 0;
+  }
+  return { level: lvl, cost, budget, depots: usedDepot };
+}
+
+// ───────────────────────────── deteccion / niebla ─────────────────────────────
+
+function computeDetection(game) {
+  for (const side of SIDES) {
+    const foe = other(side);
+    const w = WEATHER[game.weather.type].sight * (game.time.hour >= 20 || game.time.hour < 5 ? 0.55 : 1);
+    const air = game.sides[side].air.alloc.recon * game.sides[side].air.sorties / 100
+      * WEATHER[game.weather.type].air;
+    for (const e of game.units) {
+      if (e.side !== foe || e.status === 'destroyed') continue;
+      let best = 0;
+      for (const u of game.units) {
+        if (u.side !== side || u.status === 'destroyed') continue;
+        const d = distance(u.col, u.row, e.col, e.row);
+        const sight = TERRAIN[game.hexes[u.row * game.W + u.col].t].sight * u.tpl.recon * w;
+        if (d <= 1) best = Math.max(best, 100);
+        else if (d <= sight) best = Math.max(best, 100 * (1 - (d - 1) / Math.max(1, sight)) * 0.95);
+      }
+      const cover = TERRAIN[game.hexes[e.row * game.W + e.col].t].cover;
+      best *= (1 - cover * 0.55);
+      best += clamp(air * 26 - distance(e.col, e.row, game.sides[side].frontRefCol ?? e.col, e.row) * 0.4, 0, 45);
+      e.detectedBy = e.detectedBy || {};
+      const prev = e.detectedBy[side] ?? 0;
+      e.detectedBy[side] = clamp(Math.max(best, prev * 0.55), 0, 100);
+      if (e.detectedBy[side] > 30) { e.lastSeen = [e.col, e.row]; e.lastSeenTurn = game.turn; }
+    }
+  }
+}
+
+// ───────────────────────────── artilleria y aviacion ─────────────────────────────
+
+function artillerySupport(game, side, targetHex, mission) {
+  let power = 0, supp = 0, used = [];
+  const cb = game.sides[side].counterBatteryPenalty || 0;
+  for (const u of game.units) {
+    if (u.side !== side || u.status === 'destroyed') continue;
+    if (u.tpl.indRange < 2 || (u.equip.guns + u.equip.mlrs) < 4) continue;
+    if (u.artyMission !== mission && !(mission === 'apoyo' && u.artyMission === 'apoyo')) continue;
+    const d = distance(u.col, u.row, targetHex.col, targetHex.row);
+    if (d > u.tpl.indRange) continue;
+    if (u.ammo < 6) continue;
+    const eff = (u.equip.guns * 1.0 + u.equip.mlrs * 2.2) / 100
+      * readiness(u) * (0.6 + 0.4 * u.effort) * (1 - cb * 0.45);
+    power += eff * 2.6;
+    supp += eff * 16;
+    const burn = 9 * u.effort;
+    u.ammo = clamp(u.ammo - burn, 0, 100);
+    used.push(u);
+  }
+  return { power, supp, used };
+}
+
+function airSupport(game, side, kind) {
+  const S = game.sides[side];
+  const w = WEATHER[game.weather.type].air;
+  const avail = S.air.sorties * (S.air.alloc[kind] / 100) * w;
+  const sup = clamp(1 + S.airSuperiority * 0.5, 0.25, 2.0);
+  return avail * sup;
+}
+
+// ───────────────────────────── combate ─────────────────────────────
+
+function resolveAssault(game, targetIdx, attackers, log) {
+  const W = game.W;
+  const th = game.hexes[targetIdx];
+  const defenders = game._occ.list[targetIdx] || [];
+  if (!defenders.length || !attackers.length) return null;
+  const dSide = defenders[0].side, aSide = attackers[0].side;
+  const D = DOCTRINES[game.sides[aSide].doctrine];
+  const dArmor = armorShare(defenders);
+  const aArmor = armorShare(attackers);
+
+  // ─ preparacion artillera y apoyo aereo
+  const prep = artillerySupport(game, aSide, th, 'preparacion');
+  const sup = artillerySupport(game, aSide, th, 'apoyo');
+  const dSup = artillerySupport(game, dSide, game.hexes[attackers[0].row * W + attackers[0].col], 'apoyo');
+  const cas = airSupport(game, aSide, 'cas');
+  const dcas = airSupport(game, dSide, 'cas');
+
+  for (const d of defenders) d.suppression = clamp(d.suppression + (prep.supp + sup.supp) / defenders.length * D.artyPrep + cas * 0.6, 0, 95);
+  for (const a of attackers) a.suppression = clamp(a.suppression + dSup.supp / attackers.length + dcas * 0.5, 0, 95);
+
+  // ─ potencia
+  let A = 0, Dp = 0;
+  const frontage = clamp(1.15 - 0.13 * (attackers.length - 1), 0.55, 1.15); // saturacion del frente de ataque
+  for (const a of attackers) A += combatPower(a, game, 'attack', { armorShare: dArmor });
+  A *= frontage;
+  A += (prep.power * D.artyPrep + sup.power) * 0.75 + cas * 0.9;
+
+  for (const d of defenders) Dp += combatPower(d, game, 'defend', { armorShare: aArmor });
+  Dp += dSup.power * 0.6 + dcas * 0.7;
+
+  // ─ apoyo de flancos: hexagonos contiguos al defensor en manos propias
+  let flank = 0;
+  for (const [c, r] of neighbors(th.col, th.row)) {
+    if (c < 0 || r < 0 || c >= game.W || r >= game.H) continue;
+    const j = r * game.W + c;
+    const o = game._occ.occ[j];
+    if (o >= 0) flank += (SIDES[o] === dSide ? 1 : -1);
+  }
+  Dp *= clamp(1 + flank * 0.045, 0.70, 1.25);
+
+  // ─ paso de curso de agua contra la posicion
+  let river = false;
+  for (const a of attackers) {
+    const nb = neighbors(a.col, a.row);
+    for (let d = 0; d < 6; d++) {
+      if (nb[d][0] === th.col && nb[d][1] === th.row) {
+        const ah = game.hexes[a.row * W + a.col];
+        if (ah.river[d] && !ah.bridge[d]) river = true;
+      }
+    }
+  }
+  if (river) {
+    const eng = attackers.reduce((s, a) => s + a.tpl.engineer, 0);
+    A *= clamp(0.42 + eng * 0.12, 0.42, 0.92);
+  }
+
+  // ─ sorpresa: defensor no detectado o sin CG
+  const detected = defenders.reduce((s, d) => s + (d.detectedBy?.[aSide] ?? 0), 0) / defenders.length;
+  if (detected < 45) A *= 1.12;
+  if (!defenders.some(d => inCommand(d, game))) Dp *= 0.85;
+
+  const ratio = A / Math.max(0.001, Dp);
+
+  // ─ probabilidad de exito: sigmoide sobre la relacion de fuerzas.
+  //   Con k=1.7, 1:1 -> 50 %, 2:1 -> 76 %, 3:1 -> 87 %, 5:1 -> 96 %.
+  const k = 1.7;
+  const p = Math.pow(ratio, k) / (Math.pow(ratio, k) + 1);
+  const roll = game.rng();
+  const success = roll < p;
+
+  // ─ bajas. La intensidad la fija el esfuerzo ordenado y la postura.
+  const inten = attackers.reduce((s, a) => s + a.effort * POSTURES[a.posture].cas, 0) / attackers.length;
+  const ammoF = attackers.reduce((s, a) => s + Math.min(1, a.ammo / 60), 0) / attackers.length;
+  const terrDef = TERRAIN[th.t].def;
+  const entr = 1 + (defenders.reduce((s, d) => s + d.entrench, 0) / defenders.length) * 0.13;
+
+  let defRate = 0.021 * inten * ammoF * Math.pow(clamp(ratio, 0.2, 6), 0.55) / (terrDef * entr);
+  let atkRate = 0.019 * inten * Math.pow(clamp(1 / ratio, 0.2, 6), 0.5) * terrDef * entr * 0.55;
+  if (river) atkRate *= 1.45;
+  defRate = clamp(defRate * game.rng.range(0.75, 1.3), 0.001, 0.16);
+  atkRate = clamp(atkRate * game.rng.range(0.75, 1.3), 0.001, 0.14);
+
+  // ─ hexagono de retirada: la clave del cerco
+  const escape = retreatHex(game, defenders[0], attackers);
+  const trapped = !escape;
+  if (trapped) { defRate *= 2.0; }
+
+  const rep = { targetIdx, aSide, dSide, ratio, p, success, river, trapped, attackers: [], defenders: [], hexName: th.city ? th.city.name : `${th.col},${th.row}` };
+
+  for (const d of defenders) {
+    const c = applyCasualties(d, defRate * game.rng.range(0.85, 1.15), game);
+    d.suppression = clamp(d.suppression + 22 * inten, 0, 95);
+    d.fatigue = clamp(d.fatigue + 7 * inten, 0, 100);
+    d.ammo = clamp(d.ammo - 11 * d.effort, 0, 100);
+    d.engagedTurn = game.turn;
+    rep.defenders.push({ id: d.id, name: d.name, cas: c });
+  }
+  for (const a of attackers) {
+    const c = applyCasualties(a, atkRate * game.rng.range(0.85, 1.15), game);
+    a.fatigue = clamp(a.fatigue + 11 * inten, 0, 100);
+    a.ammo = clamp(a.ammo - 15 * a.effort, 0, 100);
+    a.fuel = clamp(a.fuel - 5 * a.effort, 0, 100);
+    a.engagedTurn = game.turn;
+    rep.attackers.push({ id: a.id, name: a.name, cas: c });
+  }
+
+  const dCas = rep.defenders.reduce((s, x) => s + x.cas, 0);
+  const aCas = rep.attackers.reduce((s, x) => s + x.cas, 0);
+  game.sides[dSide].casualties.total += dCas;
+  game.sides[aSide].casualties.total += aCas;
+
+  // ─ efecto moral
+  for (const d of defenders) {
+    d.morale = clamp(d.morale - (success ? 9 : 2) - defRate * 120, 0, 100);
+    d.cohesion = clamp(d.cohesion - defRate * 90 - (trapped ? 6 : 0), 0, 100);
+  }
+  for (const a of attackers) {
+    a.morale = clamp(a.morale + (success ? 4 : -6) - atkRate * 90, 0, 100);
+    a.cohesion = clamp(a.cohesion - atkRate * 70, 0, 100);
+  }
+
+  if (success) {
+    for (const d of defenders) {
+      d.entrench = Math.max(0, d.entrench - 1.5);
+      if (escape) {
+        moveUnitTo(game, d, escape[0], escape[1]);
+        d.status = d.morale < 22 || d.cohesion < 22 ? 'routed' : 'ok';
+      } else {
+        d.morale = clamp(d.morale - 16, 0, 100);
+        d.status = 'trapped';
+      }
+    }
+    rebuildOcc(game);
+    // ocupacion del objetivo por el asaltante mejor situado
+    if (!(game._occ.list[targetIdx] || []).length) {
+      const winner = attackers.filter(a => a.status === 'ok')
+        .sort((x, y) => (y.personnel / y.personnelMax) - (x.personnel / x.personnelMax))[0];
+      if (winner && winner.mpLeft > 0.5) {
+        moveUnitTo(game, winner, th.col, th.row);
+        winner.entrench = 0;
+        rebuildOcc(game);
+        rep.captured = true;
+      }
+    }
+  } else {
+    for (const a of attackers) {
+      a.morale = clamp(a.morale - 3, 0, 100);
+      if (a.morale < a.roeMorale) a.posture = 'defensa';
+    }
+  }
+  log.push(rep);
+  return rep;
+}
+
+/** Baja aplicada a personal y material; devuelve bajas de personal. */
+function applyCasualties(u, rate, game) {
+  const loss = Math.round(u.personnel * rate);
+  u.personnel = Math.max(0, u.personnel - loss);
+  u.casualtiesTotal += loss;
+  const eq = rate * game.rng.range(0.7, 1.4);
+  for (const k of ['tanks', 'ifv', 'apc', 'guns', 'mlrs', 'atgm', 'aa']) {
+    u.equip[k] = Math.max(0, Math.round(u.equip[k] * (1 - eq)));
+  }
+  if (u.personnel / u.personnelMax < 0.12) u.status = 'destroyed';
+  return loss;
+}
+
+/** Busca hexagono de repliegue: alejandose del atacante, sin ZDC enemiga si es posible. */
+function retreatHex(game, u, attackers) {
+  const W = game.W, H = game.H;
+  const ez = game._zoc[other(u.side)];
+  const { occ } = game._occ;
+  const mySide = u.side === 'BLUE' ? 0 : 1;
+  let best = null, bestScore = -1e9;
+  const ax = attackers.reduce((s, a) => s + a.col, 0) / attackers.length;
+  const ay = attackers.reduce((s, a) => s + a.row, 0) / attackers.length;
+  const nb = neighbors(u.col, u.row);
+  for (let d = 0; d < 6; d++) {
+    const [c, r] = nb[d];
+    if (c < 0 || r < 0 || c >= W || r >= H) continue;
+    const j = r * W + c, h = game.hexes[j];
+    if (h.t === 'agua') continue;
+    if (occ[j] >= 0 && occ[j] !== mySide) continue;
+    if ((game._occ.list[j] || []).length >= 2) continue;
+    const src = game.hexes[u.row * W + u.col];
+    if (src.river[d] && !src.bridge[d]) continue;
+    let s = (Math.hypot(c - ax, r - ay) - Math.hypot(u.col - ax, u.row - ay)) * 10;
+    s -= ez[j] * 6;
+    s += (game._supply[u.side] ? game._supply[u.side].level[j] : 0) * 0.08;
+    s += TERRAIN[h.t].def * 3;
+    if (s > bestScore) { bestScore = s; best = [c, r]; }
+  }
+  return best;
+}
+
+function moveUnitTo(game, u, col, row) {
+  u.trail.push([u.col, u.row, game.turn]);
+  if (u.trail.length > 24) u.trail.shift();
+  u.col = col; u.row = row;
+}
+
+function rebuildOcc(game) { game._occ = occupancy(game); }
+
+// ───────────────────────────── secuencia de turno ─────────────────────────────
+
+function advanceClock(game) {
+  game.time.hour += 6;
+  if (game.time.hour >= 24) { game.time.hour -= 24; game.time.day++; }
+  // meteorologia: cadena de Markov sencilla con inercia estacional
+  if (game.rng() < 0.34) {
+    const opts = game.season === 'invierno'
+      ? ['nieve', 'nublado', 'niebla', 'tormenta', 'despejado']
+      : ['despejado', 'nublado', 'lluvia', 'niebla', 'tormenta'];
+    game.weather.type = game.rng.pick(opts);
+  }
+  const wet = ['lluvia', 'tormenta', 'nieve'].includes(game.weather.type);
+  if (wet && game.rng() < 0.5) game.weather.ground = game.weather.ground === 'firme' ? 'humedo' : 'barro';
+  else if (!wet && game.rng() < 0.35) game.weather.ground = game.weather.ground === 'barro' ? 'humedo' : 'firme';
+  if (game.season === 'invierno' && game.rng() < 0.3) game.weather.ground = 'helado';
+}
+
+function airPhase(game) {
+  for (const side of SIDES) {
+    const S = game.sides[side];
+    const w = WEATHER[game.weather.type].air;
+    S.air.sorties = clamp(S.air.capacity * (0.6 + 0.4 * (S.air.readiness / 100)), 0, 999);
+    S._cap = S.air.sorties * (S.air.alloc.cap / 100) * w * (1 + S.air.quality * 0.25);
+  }
+  const b = game.sides.BLUE._cap, r = game.sides.RED._cap;
+  // dominio del aire = ventaja relativa, atenuada por la defensa antiaerea de tierra
+  const aaB = game.units.filter(u => u.side === 'BLUE').reduce((s, u) => s + u.equip.aa, 0) / 600;
+  const aaR = game.units.filter(u => u.side === 'RED').reduce((s, u) => s + u.equip.aa, 0) / 600;
+  const sB = (b + aaB) - (r + aaR), tot = Math.max(1, b + r + aaB + aaR);
+  game.sides.BLUE.airSuperiority = clamp(sB / tot * 2, -1, 1);
+  game.sides.RED.airSuperiority = -game.sides.BLUE.airSuperiority;
+
+  for (const side of SIDES) {
+    const S = game.sides[side], F = game.sides[other(side)];
+    const inter = airSupport(game, side, 'interdiction');
+    F.interdictedBy = clamp(inter / 55, 0, 1.4);
+    S.counterBatteryPenalty = 0;
+  }
+  // contrabateria
+  for (const side of SIDES) {
+    let cb = 0;
+    for (const u of game.units) {
+      if (u.side !== side || u.status === 'destroyed') continue;
+      if (u.artyMission === 'contrabateria' && (u.equip.guns + u.equip.mlrs) > 4 && u.ammo > 10) {
+        cb += (u.equip.guns + u.equip.mlrs * 2) / 100 * readiness(u);
+        u.ammo = clamp(u.ammo - 7 * u.effort, 0, 100);
+      }
+    }
+    game.sides[other(side)].counterBatteryPenalty = clamp(cb / 6, 0, 0.8);
+  }
+}
+
+function interdictionPhase(game) {
+  for (const side of SIDES) {
+    for (const u of game.units) {
+      if (u.side !== side || u.status === 'destroyed') continue;
+      if (u.artyMission !== 'interdiccion' || u.ammo < 8) continue;
+      for (const e of game.units) {
+        if (e.side === side || e.status === 'destroyed') continue;
+        if (distance(u.col, u.row, e.col, e.row) > u.tpl.indRange) continue;
+        if ((e.detectedBy?.[side] ?? 0) < 35) continue;
+        const f = (u.equip.guns + u.equip.mlrs * 2) / 140 * readiness(u) * u.effort;
+        e.suppression = clamp(e.suppression + f * 22, 0, 95);
+        applyCasualties(e, clamp(f * 0.004, 0, 0.01), game);
+      }
+      u.ammo = clamp(u.ammo - 8 * u.effort, 0, 100);
+    }
+  }
+}
+
+function movementPhase(game, events) {
+  const order = [...game.units].filter(u => u.status !== 'destroyed');
+  order.sort((a, b) => maxMP(b, game) - maxMP(a, game));
+  for (const u of order) {
+    u.mpLeft = maxMP(u, game);
+    u.movedThisTurn = 0;
+  }
+  for (const u of order) {
+    if (u.status === 'trapped') u.status = 'ok';
+    if (!u.order || (u.order.type !== 'move' && u.order.type !== 'attack' && u.order.type !== 'withdraw')) continue;
+    if (u.order.activeTurn > game.turn) continue;
+    let guard = 0;
+    // La ruta se calcula una vez por turno y se sigue; solo se replantea si el
+    // paso siguiente ha dejado de ser transitable.
+    let path = findPath(game, u, u.order.col, u.order.row, game._zoc);
+    while (u.mpLeft > 0.3 && guard++ < 40) {
+      if (!path || !path.length) break;
+      const next = path[0];
+      const nc = next % game.W, nr = (next / game.W) | 0;
+      let dir = -1;
+      const nb = neighbors(u.col, u.row);
+      for (let d = 0; d < 6; d++) if (nb[d][0] === nc && nb[d][1] === nr) dir = d;
+      if (dir < 0) break;
+      const stack = game._occ.list[next] || [];
+      if (stack.length && stack[0].side !== u.side) break;              // hay que combatir, no marchar
+      if (stack.length >= 2) {                                          // limite de apilamiento: rodear
+        path = findPath(game, u, u.order.col, u.order.row, game._zoc);
+        if (!path || !path.length || path[0] === next) break;
+        continue;
+      }
+      const c = moveCost(game, u.row * game.W + u.col, next, dir, u);
+      if (!isFinite(c) || c > u.mpLeft + 0.001) break;
+      const inEZ = game._zoc[other(u.side)][u.row * game.W + u.col];
+      moveUnitTo(game, u, nc, nr);
+      path.shift();
+      u.mpLeft -= c;
+      u.movedThisTurn++;
+      u.fuel = clamp(u.fuel - c * 1.5 * POSTURES[u.posture].fuel, 0, 100);
+      u.fatigue = clamp(u.fatigue + c * 1.1, 0, 100);
+      u.entrench = Math.max(0, u.entrench - 1.2);
+      rebuildOcc(game);
+      if (game._zoc[other(u.side)][next]) { u.mpLeft = Math.min(u.mpLeft, 0); } // detenerse en ZDC
+      if (inEZ && !game._zoc[other(u.side)][next]) u.mpLeft = Math.min(u.mpLeft, 0);
+      if (u.col === u.order.col && u.row === u.order.row) { break; }
+    }
+    if (u.col === u.order.col && u.row === u.order.row && u.order.type === 'move') {
+      events.push({ t: 'arrive', u: u.id, txt: `${u.name} alcanza su objetivo.` });
+      u.order = null;
+    }
+  }
+}
+
+function combatPhase(game, events) {
+  const groups = new Map();
+  for (const u of game.units) {
+    if (u.status === 'destroyed' || !u.order || u.order.type !== 'attack') continue;
+    if (u.order.activeTurn > game.turn) continue;
+    if (u.suppression > 80) continue;
+    const ti = u.order.row * game.W + u.order.col;
+    if (distance(u.col, u.row, u.order.col, u.order.row) !== 1) continue;
+    const def = game._occ.list[ti] || [];
+    if (!def.length || def[0].side === u.side) continue;
+    if (!groups.has(ti)) groups.set(ti, []);
+    groups.get(ti).push(u);
+  }
+  const reports = [];
+  for (const [ti, atk] of groups) resolveAssault(game, ti, atk, reports);
+  for (const r of reports) {
+    const dc = r.defenders.reduce((s, x) => s + x.cas, 0);
+    const ac = r.attackers.reduce((s, x) => s + x.cas, 0);
+    events.push({
+      t: 'combat', side: r.aSide,
+      txt: `${r.hexName}: ataque ${r.aSide === 'BLUE' ? 'azul' : 'rojo'} ${r.ratio.toFixed(2)}:1 — ` +
+        `${r.success ? (r.captured ? 'posición tomada' : 'defensor desalojado') : 'rechazado'}` +
+        `${r.trapped ? ' · DEFENSOR SIN VÍA DE REPLIEGUE' : ''}. ` +
+        `Bajas ${ac.toLocaleString('es')} / ${dc.toLocaleString('es')}.`,
+      report: r,
+    });
+  }
+  return reports;
+}
+
+function exploitationPhase(game, reports, events) {
+  for (const r of reports) {
+    if (!r.success || !r.captured) continue;
+    const D = DOCTRINES[game.sides[r.aSide].doctrine];
+    for (const a of game.units) {
+      if (a.side !== r.aSide || a.status === 'destroyed') continue;
+      if (a.posture !== 'avance' && a.posture !== 'reserva') continue;
+      if (distance(a.col, a.row, r.targetIdx % game.W, (r.targetIdx / game.W) | 0) > 2) continue;
+      if (a.tpl.exploit < 1.1 || a.fuel < 25) continue;
+      const bonus = a.tpl.exploit * D.exploit * 3.2;
+      a.mpLeft = Math.max(a.mpLeft, bonus);
+      if (a.order && a.order.type === 'move') {
+        events.push({ t: 'exploit', txt: `${a.name} pasa a explotación tras la ruptura en ${r.hexName}.` });
+      }
+    }
+  }
+}
+
+function supplyPhase(game, events) {
+  for (const side of SIDES) game._supply[side] = computeSupply(game, side);
+  for (const u of game.units) {
+    if (u.status === 'destroyed') continue;
+    const i = u.row * game.W + u.col;
+    const sl = game._supply[u.side].level[i];
+    u.supplyLevel = sl;
+    const S = game.sides[u.side];
+    const prio = [0.6, 1.0, 1.5][u.logPriority] || 1;
+    const share = clamp(S.stockpile / Math.max(1, S.demand), 0, 1);
+    if (sl > 0.5) {
+      u.isolatedTurns = 0;
+      const rate = (sl / 100) * prio * share;
+      u.stores = clamp(u.stores + 22 * rate, 0, 100);
+      u.ammo = clamp(u.ammo + 17 * rate * (u.stores / 100 + 0.2), 0, 100);
+      u.fuel = clamp(u.fuel + 21 * rate * (u.stores / 100 + 0.2), 0, 100);
+      S.stockpile -= 3.5 * rate;
+    } else {
+      u.isolatedTurns++;
+      const burn = 9 + 5 * u.effort;
+      u.stores = clamp(u.stores - burn, 0, 100);
+      if (u.stores <= 0) {
+        u.ammo = clamp(u.ammo - 17, 0, 100);
+        u.fuel = clamp(u.fuel - 21, 0, 100);
+        u.morale = clamp(u.morale - 7 - u.isolatedTurns * 0.9, 0, 100);
+        u.cohesion = clamp(u.cohesion - 4, 0, 100);
+      }
+      if (u.fuel <= 0) {   // material pesado abandonado por falta de combustible
+        for (const k of ['tanks', 'ifv', 'apc']) u.equip[k] = Math.round(u.equip[k] * 0.86);
+      }
+    }
+  }
+  for (const side of SIDES) {
+    const S = game.sides[side];
+    S.demand = game.units.filter(u => u.side === side && u.status !== 'destroyed').length * 3.5;
+    S.stockpile = clamp(S.stockpile + S.production, 0, S.stockpileMax);
+  }
+}
+
+function moralePhase(game, events) {
+  for (const u of game.units) {
+    if (u.status === 'destroyed') continue;
+    const rest = game.turn - u.engagedTurn > 1;
+    const P = POSTURES[u.posture];
+    u.suppression = clamp(u.suppression - 26, 0, 95);
+    u.fatigue = clamp(u.fatigue + P.fatigue * 1.4 - (rest ? 9 : 2), 0, 100);
+    const supOK = u.supplyLevel > 25;
+    if (rest && supOK) {
+      u.morale = clamp(u.morale + 3.2 + (u.posture === 'reserva' ? 2.4 : 0), 0, 100);
+      u.cohesion = clamp(u.cohesion + 2.6, 0, 100);
+    }
+    if (!supOK) u.morale = clamp(u.morale - 2.5, 0, 100);
+    // atrincheramiento
+    if (u.digIn && u.movedThisTurn === 0) {
+      const h = game.hexes[u.row * game.W + u.col];
+      const max = TERRAIN[h.t].entrenchMax;
+      let rate = u.tpl.entrenchRate * P.entrench * 0.55;
+      for (const e of game.units) {
+        if (e.side === u.side && e.tpl.engineer >= 2 && distance(e.col, e.row, u.col, u.row) <= 2) rate *= 1.8;
+      }
+      if (GROUND[game.weather.ground].name === 'Helado') rate *= 0.5;
+      u.entrench = clamp(u.entrench + rate, 0, max);
+    } else if (u.movedThisTurn > 0) {
+      u.entrench = Math.max(0, u.entrench - 0.8);
+    }
+    // reemplazos
+    const S = game.sides[u.side];
+    if (rest && supOK && u.personnel < u.personnelMax && S.replacements > 0) {
+      const want = Math.round(Math.min((u.personnelMax - u.personnel) * 0.16, S.replacements, u.personnelMax * 0.05));
+      u.personnel += want; S.replacements -= want;
+      for (const k of ['tanks', 'ifv', 'apc', 'guns', 'mlrs', 'atgm', 'aa']) {
+        if (u.equip[k] < u.equipMax[k]) u.equip[k] = Math.min(u.equipMax[k], u.equip[k] + Math.ceil(u.equipMax[k] * 0.05));
+      }
+      u.cohesion = clamp(u.cohesion - 0.6, 0, 100);   // integrar reemplazos cuesta cohesion
+    }
+    // desbandada y recuperacion
+    if (u.status === 'routed' && u.morale > 35 && rest) u.status = 'ok';
+    if (u.morale < 12 && u.cohesion < 20 && u.status !== 'routed') {
+      u.status = 'routed';
+      events.push({ t: 'rout', side: u.side, txt: `${u.name} se desbanda: cohesión perdida.` });
+    }
+    // capitulacion en bolsa
+    if (u.isolatedTurns >= 4 && u.stores <= 0 && u.morale < 22 && u.ammo <= 5) {
+      const pow = u.personnel;
+      u.status = 'destroyed'; u.personnel = 0;
+      game.sides[u.side].casualties.pow += pow;
+      game.sides[u.side].casualties.total += pow;
+      events.push({ t: 'surrender', side: u.side, big: true, txt: `${u.name} capitula en la bolsa: ${pow.toLocaleString('es')} prisioneros.` });
+    }
+    if (u.status === 'destroyed' && u.personnel > 0) {
+      events.push({ t: 'destroyed', side: u.side, big: true, txt: `${u.name} destruida como unidad de combate.` });
+      u.personnel = 0;
+    }
+  }
+  game.units = game.units.filter(u => !(u.status === 'destroyed' && u.personnel === 0 && u._reaped)) ;
+  for (const u of game.units) if (u.status === 'destroyed') u._reaped = true;
+}
+
+// El retardo se fija en el momento de cursar la orden (ver orders.js). Aqui solo
+// se comprueba si la orden en transito ya ha llegado a la unidad.
+function c2Phase(game) {
+  for (const u of game.units) {
+    if (!u.pending) continue;
+    if (game.turn >= u.pending.activeTurn) { u.order = u.pending; u.pending = null; }
+  }
+}
+
+/** Ejecuta un turno completo y devuelve la lista de sucesos. */
+function runTurn(game, aiFn) {
+  const events = [];
+  game.turn++;
+  advanceClock(game);
+  rebuildOcc(game);
+  game._zoc = computeZOC(game);
+  for (const s of SIDES) game._supply[s] = computeSupply(game, s);
+  computeDetection(game);
+
+  c2Phase(game);
+  if (aiFn) aiFn(game, events);
+
+  airPhase(game);
+  interdictionPhase(game);
+
+  rebuildOcc(game); game._zoc = computeZOC(game);
+  movementPhase(game, events);
+
+  rebuildOcc(game); game._zoc = computeZOC(game);
+  const reports = combatPhase(game, events);
+
+  rebuildOcc(game); game._zoc = computeZOC(game);
+  exploitationPhase(game, reports, events);
+  movementPhase(game, events);
+
+  rebuildOcc(game); game._zoc = computeZOC(game);
+  supplyPhase(game, events);
+  moralePhase(game, events);
+  computeDetection(game);
+
+  rebuildOcc(game); game._zoc = computeZOC(game);
+  for (const s of SIDES) game._supply[s] = computeSupply(game, s);
+
+  // objetivos: control de nucleos con valor
+  for (const s of SIDES) game.sides[s].vp = 0;
+  for (const h of game.hexes) {
+    if (!h.vp) continue;
+    const st = game._occ.occ[h.i];
+    if (st >= 0) h.owner = SIDES[st];
+    if (h.owner) game.sides[h.owner].vp += h.vp;
+  }
+  return { events, reports };
+}
+
+
+
+return { clamp, readiness, rawPower, combatPower, inCommand, projectsZOC, computeZOC, occupancy, moveCost, findPath, maxMP, computeSupply, computeDetection, resolveAssault, applyCasualties, retreatHex, moveUnitTo, rebuildOcc, advanceClock, runTurn, SIDES, other };
+})();
+
+/* ── analysis.js ── */
+__M['analysis'] = (function(){
+// Analisis operacional del teatro.
+//
+// Traduce la posicion de las unidades a la geometria que un estado mayor lee en
+// el mapa: control del terreno, linea de contacto, salientes, bolsas, cercos,
+// pinzas a punto de cerrarse y brechas sin cubrir. Todo se deriva de dos campos:
+//   1) el campo de control (influencia ponderada de cada bando sobre cada hexagono)
+//   2) el campo logistico (nivel de abastecimiento trazado desde las bases)
+// La bolsa es la interseccion de ambos: territorio nominalmente propio cuya traza
+// de abastecimiento esta cortada.
+const { neighbors, distance, disc, lineHexes, HEX_KM } = __M['hex'];
+const { SIDES, other, projectsZOC } = __M['sim'];
+const { TERRAIN } = __M['terrain'];
+const { MinHeap } = __M['heap'];
+
+const B = 0, R = 1;
+const sideIdx = (s) => (s === 'BLUE' ? 0 : 1);
+
+/**
+ * Campo de control por difusion de distancia ponderada.
+ *
+ * Cada bando propaga «alcance» desde sus unidades y sus bases a traves del
+ * terreno; un hexagono pertenece a quien llega antes. Recorrer terreno dificil
+ * cuesta mas, y penetrar en la zona de control contraria cuesta bastante mas:
+ * asi la frontera se detiene en la linea de contacto en vez de degradarse en un
+ * moteado. El resultado son regiones contiguas —que es como se pinta un frente—
+ * y de ahi salen solos los salientes, las bolsas y los cercos.
+ */
+function controlField(game) {
+  const { W, H, N } = game;
+  const prev = game.analysis?.owner;
+  const dist = [new Float32Array(N).fill(Infinity), new Float32Array(N).fill(Infinity)];
+
+  for (const s of SIDES) {
+    const si = sideIdx(s), ez = game._zoc[other(s)];
+    const d = dist[si];
+    const pq = new MinHeap();
+    const seed = (i, v) => { if (v < d[i]) { d[i] = v; pq.push(v, i); } };
+
+    for (const u of game.units) {
+      if (u.side !== s || u.status === 'destroyed') continue;
+      // una division intacta domina mas lejos que un resto batido
+      const frac = u.personnel / u.personnelMax;
+      const pen = (projectsZOC(u) ? 0 : 2.5) + (1 - frac) * 2 + (u.status === 'routed' ? 3 : 0)
+        + (1 - u.morale / 100) * 1.5;
+      seed(u.row * W + u.col, pen);
+    }
+    for (const bi of game.sides[s].bases) seed(bi, 0);
+
+    while (pq.size) {
+      const cur = pq.pop();
+      const dc = d[cur];
+      const cc = cur % W, cr = (cur / W) | 0;
+      for (const [c, r] of neighbors(cc, cr)) {
+        if (c < 0 || r < 0 || c >= W || r >= H) continue;
+        const j = r * W + c, h = game.hexes[j];
+        if (h.t === 'agua') continue;
+        let step = 0.85 + 0.30 * TERRAIN[h.t].move;
+        if (ez[j]) step += 2.2;                       // la ZDC contraria frena la expansion
+        const nd = dc + step;
+        if (nd < d[j]) { d[j] = nd; pq.push(nd, j); }
+      }
+    }
+  }
+
+  const owner = new Int8Array(N);
+  for (let i = 0; i < N; i++) {
+    let a = dist[B][i], b = dist[R][i];
+    if (prev) { if (prev[i] === B) a -= 0.7; else b -= 0.7; }   // histeresis: el terreno no cambia de mano por un empate
+    if (!isFinite(a) && !isFinite(b)) owner[i] = (i % W) < W / 2 ? B : R;
+    else owner[i] = a <= b ? B : R;
+  }
+  return { owner, infl: dist };
+}
+
+/** Componentes conexas de hexagonos con el mismo propietario. */
+function components(game, owner, side) {
+  const { W, H, N } = game;
+  const seen = new Uint8Array(N), comps = [];
+  for (let i = 0; i < N; i++) {
+    if (seen[i] || owner[i] !== side) continue;
+    const q = [i]; seen[i] = 1; const cells = [];
+    while (q.length) {
+      const cur = q.pop(); cells.push(cur);
+      const cc = cur % W, cr = (cur / W) | 0;
+      for (const [c, r] of neighbors(cc, cr)) {
+        if (c < 0 || r < 0 || c >= W || r >= H) continue;
+        const j = r * W + c;
+        if (!seen[j] && owner[j] === side) { seen[j] = 1; q.push(j); }
+      }
+    }
+    comps.push(cells);
+  }
+  return comps.sort((a, b) => b.length - a.length);
+}
+
+/** Bolsas y cercos: territorio propio sin traza logistica hacia la base. */
+function findPockets(game, owner, side) {
+  const si = sideIdx(side);
+  const sup = game._supply[side];
+  const baseSet = new Set(game.sides[side].bases);
+  const out = [];
+  let total = 0;
+  for (let i = 0; i < game.N; i++) if (owner[i] === si) total++;
+  for (const cells of components(game, owner, si)) {
+    let maxSup = 0, hasBase = false;
+    for (const i of cells) {
+      if (sup.level[i] > maxSup) maxSup = sup.level[i];
+      if (baseSet.has(i)) hasBase = true;
+    }
+    if (hasBase || maxSup > 12) continue;                       // sector normal, no bolsa
+    // Un cerco es una porcion aislada del despliegue. Si lo «aislado» es
+    // practicamente todo el territorio propio, lo que hay no es una bolsa sino
+    // un colapso general del sostenimiento, y se informa como tal en otro sitio.
+    if (cells.length > total * 0.45) continue;
+    const set = new Set(cells);
+    const units = game.units.filter(u => u.side === side && u.status !== 'destroyed'
+      && set.has(u.row * game.W + u.col));
+    if (!units.length && cells.length < 6) continue;
+    const men = units.reduce((s, u) => s + u.personnel, 0);
+    const sealed = maxSup <= 2;
+    // anchura del corredor si no esta sellada: hexagonos de borde con algo de traza
+    let corridor = 0;
+    for (const i of cells) if (sup.level[i] > 2 && sup.level[i] <= 12) corridor++;
+    out.push({
+      kind: sealed ? 'cerco' : 'bolsa',
+      side, cells, units: units.map(u => u.id), men,
+      areaKm2: Math.round(cells.length * HEX_KM * HEX_KM * 0.866),
+      sealed, corridorHexes: corridor,
+      avgSupply: units.length ? units.reduce((s, u) => s + u.supplyLevel, 0) / units.length : 0,
+      turnsIsolated: units.length ? Math.max(...units.map(u => u.isolatedTurns)) : 0,
+      centroid: centroid(game, cells),
+    });
+  }
+  return out.sort((a, b) => b.men - a.men);
+}
+
+/** Grado de envolvimiento de un hexagono: proporcion de enemigo a su alrededor. */
+function enclosureField(game, owner, side) {
+  const { W, H, N } = game;
+  const si = sideIdx(side), ei = 1 - si;
+  const enc = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    if (owner[i] !== si) continue;
+    const c = i % W, r = (i / W) | 0;
+    let e = 0, t = 0;
+    for (const [cc, rr] of disc(c, r, 3)) {
+      if (cc < 0 || rr < 0 || cc >= W || rr >= H) continue;
+      t++; if (owner[rr * W + cc] === ei) e++;
+    }
+    enc[i] = t ? e / t : 0;
+  }
+  return enc;
+}
+
+/** Salientes: protuberancias del propio frente dentro del dispositivo enemigo. */
+function findSalients(game, owner, side, enc, pocketCells) {
+  const { W, H, N } = game;
+  const si = sideIdx(side);
+  const cand = new Uint8Array(N);
+  for (let i = 0; i < N; i++) if (owner[i] === si && enc[i] >= 0.40 && !pocketCells.has(i)) cand[i] = 1;
+
+  const seen = new Uint8Array(N), out = [];
+  for (let i = 0; i < N; i++) {
+    if (seen[i] || !cand[i]) continue;
+    const q = [i]; seen[i] = 1; const cells = [];
+    while (q.length) {
+      const cur = q.pop(); cells.push(cur);
+      const cc = cur % W, cr = (cur / W) | 0;
+      for (const [c, r] of neighbors(cc, cr)) {
+        if (c < 0 || r < 0 || c >= W || r >= H) continue;
+        const j = r * W + c;
+        if (!seen[j] && cand[j]) { seen[j] = 1; q.push(j); }
+      }
+    }
+    if (cells.length < 4) continue;
+    // hexagonos de arranque: los que enlazan con el cuerpo principal del frente
+    const base = cells.filter(k => {
+      const cc = k % W, cr = (k / W) | 0;
+      return neighbors(cc, cr).some(([c, r]) =>
+        c >= 0 && r >= 0 && c < W && r < H && owner[r * W + c] === si && !cand[r * W + c]);
+    });
+    if (!base.length) continue;                                  // desconectado: es bolsa, no saliente
+    // profundidad: distancia maxima al arranque
+    let depth = 0, tip = cells[0];
+    for (const k of cells) {
+      let dmin = 99;
+      for (const b of base) dmin = Math.min(dmin, distance(k % W, (k / W) | 0, b % W, (b / W) | 0));
+      if (dmin > depth) { depth = dmin; tip = k; }
+    }
+    // Una protuberancia de un solo hexagono es ruido cartografico. Un saliente
+    // operacional tiene fondo y, sobre todo, tropas dentro: es lo que lo hace
+    // interesante para quien quiere cortarlo.
+    if (depth < 3) continue;
+    const neck = base.length;
+    const cellSet = new Set(cells);
+    const units = game.units.filter(u => u.side === side && u.status !== 'destroyed'
+      && cellSet.has(u.row * W + u.col));
+    if (units.reduce((s, u) => s + u.personnel, 0) < 4000) continue;
+    out.push({
+      side, cells, base, tip,
+      depthKm: (depth + 1) * HEX_KM,
+      neckKm: neck * HEX_KM,
+      men: units.reduce((s, u) => s + u.personnel, 0),
+      units: units.map(u => u.id),
+      vulnerable: neck <= Math.max(2, depth),
+      centroid: centroid(game, cells),
+    });
+  }
+  return out.sort((a, b) => b.depthKm - a.depthKm).slice(0, 4);
+}
+
+/**
+ * Pinzas: dos salientes propios cuyas puntas convergen con dispositivo enemigo
+ * entre ambas. Se simula el cierre para valorar el premio: que fuerzas quedarian
+ * embolsadas si la brecha se sella este turno.
+ */
+function findPincers(game, owner, side, salients) {
+  const { W, H } = game;
+  const si = sideIdx(side), ei = 1 - si;
+  const out = [];
+  const arms = salients.filter(s => s.depthKm >= 10);
+  for (let a = 0; a < arms.length; a++) {
+    for (let b = a + 1; b < arms.length; b++) {
+      const A = arms[a], Bm = arms[b];
+      const ac = A.tip % W, ar = (A.tip / W) | 0;
+      const bc = Bm.tip % W, br = (Bm.tip / W) | 0;
+      const d = distance(ac, ar, bc, br);
+      if (d < 2 || d > 12) continue;
+      const line = lineHexes(ac, ar, bc, br);
+      let enemyOn = 0;
+      for (const [c, r] of line) {
+        if (c < 0 || r < 0 || c >= W || r >= H) continue;
+        if (owner[r * W + c] === ei) enemyOn++;
+      }
+      if (enemyOn === 0 || enemyOn / line.length < 0.30) continue;
+
+      // simulacion del cierre
+      const sim = Int8Array.from(owner);
+      for (const [c, r] of line) if (c >= 0 && r >= 0 && c < W && r < H) sim[r * W + c] = si;
+      const trapped = simulateTrap(game, sim, other(side));
+      // Cerrar la pinza debe aislar una parte del enemigo, no a todo el enemigo:
+      // si lo segundo, el frente ya esta roto y no es una maniobra de tenaza.
+      const foeMen = game.units.filter(x => x.side === other(side) && x.status !== 'destroyed')
+        .reduce((s, x) => s + x.personnel, 0);
+      if (trapped.men > foeMen * 0.72 || trapped.men < 2000) continue;
+      out.push({
+        side, armA: A, armB: Bm,
+        gapKm: enemyOn * HEX_KM,
+        gapHexes: enemyOn,
+        closureLine: line,
+        trappedMen: trapped.men,
+        trappedUnits: trapped.units,
+        trappedAreaKm2: trapped.areaKm2,
+        centroid: [(ac + bc) / 2, (ar + br) / 2],
+      });
+    }
+  }
+  return out.sort((x, y) => y.trappedMen - x.trappedMen).slice(0, 4);
+}
+
+/** Que fuerzas del bando `victim` quedarian sin traza con este reparto simulado. */
+function simulateTrap(game, simOwner, victim) {
+  const { W, H, N } = game;
+  const vi = sideIdx(victim);
+  // BFS desde las bases del enemigo por territorio suyo en el reparto simulado
+  const reach = new Uint8Array(N);
+  const q = [];
+  for (const bi of game.sides[victim].bases) if (simOwner[bi] === vi) { reach[bi] = 1; q.push(bi); }
+  while (q.length) {
+    const cur = q.pop();
+    const cc = cur % W, cr = (cur / W) | 0;
+    for (const [c, r] of neighbors(cc, cr)) {
+      if (c < 0 || r < 0 || c >= W || r >= H) continue;
+      const j = r * W + c;
+      if (!reach[j] && simOwner[j] === vi) { reach[j] = 1; q.push(j); }
+    }
+  }
+  let men = 0, cells = 0, units = [];
+  for (let i = 0; i < N; i++) if (simOwner[i] === vi && !reach[i]) cells++;
+  for (const u of game.units) {
+    if (u.side !== victim || u.status === 'destroyed') continue;
+    const i = u.row * W + u.col;
+    if (simOwner[i] === vi && !reach[i]) { men += u.personnel; units.push(u.id); }
+  }
+  return { men, units, areaKm2: Math.round(cells * HEX_KM * HEX_KM * 0.866) };
+}
+
+/** Brechas: tramos de contacto sin tropas propias a menos de dos hexagonos. */
+function findBreaches(game, owner, side) {
+  const { W, H, N } = game;
+  const si = sideIdx(side), ei = 1 - si;
+  const near = new Uint8Array(N);
+  for (const u of game.units) {
+    if (u.side !== side || u.status === 'destroyed' || !projectsZOC(u)) continue;
+    for (const [c, r] of disc(u.col, u.row, 2)) {
+      if (c >= 0 && r >= 0 && c < W && r < H) near[r * W + c] = 1;
+    }
+  }
+  const open = [];
+  for (let i = 0; i < N; i++) {
+    if (owner[i] !== si || near[i]) continue;
+    const c = i % W, r = (i / W) | 0;
+    if (neighbors(c, r).some(([cc, rr]) => cc >= 0 && rr >= 0 && cc < W && rr < H && owner[rr * W + cc] === ei)) open.push(i);
+  }
+  // agrupar en tramos contiguos
+  const openSet = new Set(open);
+  const seen = new Set(), out = [];
+  for (const i of open) {
+    if (seen.has(i)) continue;
+    const q = [i]; seen.add(i); const cells = [];
+    while (q.length) {
+      const cur = q.pop(); cells.push(cur);
+      for (const [c, r] of neighbors(cur % W, (cur / W) | 0)) {
+        if (c < 0 || r < 0 || c >= W || r >= H) continue;
+        const j = r * W + c;
+        if (!seen.has(j) && openSet.has(j)) { seen.add(j); q.push(j); }
+      }
+    }
+    // un hueco de menos de 15 km entra dentro de la separacion normal entre
+    // grandes unidades; solo se informa de lo que es de verdad un boquete
+    if (cells.length >= 4) out.push({ side, cells, widthKm: cells.length * HEX_KM, centroid: centroid(game, cells) });
+  }
+  return out.sort((a, b) => b.widthKm - a.widthKm).slice(0, 3);
+}
+
+/** Segmentos de la linea de contacto: aristas entre hexagonos de distinto dueño. */
+function frontlineEdges(game, owner) {
+  const { W, H, N } = game;
+  const segs = [];
+  for (let i = 0; i < N; i++) {
+    const c = i % W, r = (i / W) | 0;
+    if (owner[i] !== B) continue;
+    const nb = neighbors(c, r);
+    for (let d = 0; d < 6; d++) {
+      const [nc, nr] = nb[d];
+      if (nc < 0 || nr < 0 || nc >= W || nr >= H) continue;
+      if (owner[nr * W + nc] === R) segs.push([i, d]);
+    }
+  }
+  return segs;
+}
+
+/**
+ * Vectores de avance de las ultimas `win` marcas de rastro. Solo se pinta lo que
+ * es de verdad un avance: si la unidad ha caminado mucho para acabar cerca de
+ * donde estaba, eso es desgaste de la tropa, no progresion operacional.
+ */
+function advanceVectors(game, win = 4) {
+  const out = [];
+  for (const u of game.units) {
+    if (u.status === 'destroyed' || u.trail.length < 2) continue;
+    const past = u.trail.filter(t => t[2] >= game.turn - win);
+    if (past.length < 2) continue;
+    const [c0, r0] = past[0];
+    const neto = distance(c0, r0, u.col, u.row);
+    if (neto < 3) continue;
+    let andado = 0;
+    for (let i = 1; i < past.length; i++) andado += distance(past[i - 1][0], past[i - 1][1], past[i][0], past[i][1]);
+    andado += distance(past[past.length - 1][0], past[past.length - 1][1], u.col, u.row);
+    if (andado > 0 && neto / andado < 0.5) continue;
+    out.push({ id: u.id, side: u.side, from: [c0, r0], to: [u.col, u.row], km: neto * HEX_KM });
+  }
+  return out.sort((a, b) => b.km - a.km).slice(0, 12);
+}
+
+function centroid(game, cells) {
+  let c = 0, r = 0;
+  for (const i of cells) { c += i % game.W; r += (i / game.W) | 0; }
+  return [c / cells.length, r / cells.length];
+}
+
+/** Calcula el cuadro operacional completo para los dos bandos. */
+function analyze(game) {
+  const { owner, infl } = controlField(game);
+  const res = { owner, infl, front: frontlineEdges(game, owner), advance: advanceVectors(game), sides: {} };
+  for (const s of SIDES) {
+    const pockets = findPockets(game, owner, s);
+    const pocketCells = new Set();
+    for (const p of pockets) for (const i of p.cells) pocketCells.add(i);
+    const enc = enclosureField(game, owner, s);
+    const salients = findSalients(game, owner, s, enc, pocketCells);
+    const pincers = findPincers(game, owner, s, salients);
+    const breaches = findBreaches(game, owner, s);
+    let hexes = 0;
+    for (let i = 0; i < game.N; i++) if (owner[i] === sideIdx(s)) hexes++;
+    res.sides[s] = {
+      pockets, salients, pincers, breaches, enclosure: enc,
+      areaKm2: Math.round(hexes * HEX_KM * HEX_KM * 0.866),
+      frontKm: 0,
+    };
+  }
+  res.sides.BLUE.frontKm = res.sides.RED.frontKm = Math.round(res.front.length * HEX_KM * 0.5);
+  game.analysis = res;
+  return res;
+}
+
+return { controlField, findPockets, enclosureField, findSalients, findPincers, findBreaches, frontlineEdges, advanceVectors, analyze };
+})();
+
+/* ── ai.js ── */
+__M['ai'] = (function(){
+// Mando enemigo automatico.
+//
+// No juega hexagono a hexagono: razona en terminos operacionales. Cada turno
+// evalua la relacion de fuerzas, elige uno o dos Schwerpunkt donde la densidad
+// defensiva contraria es minima, destina reservas moviles a la explotacion,
+// intenta cortar por la base los salientes vulnerables del adversario (es decir,
+// forma pinzas), tapona sus propias brechas y ordena la ruptura del cerco a las
+// unidades embolsadas.
+const { neighbors, distance, disc, lineHexes, HEX_KM } = __M['hex'];
+const { TERRAIN } = __M['terrain'];
+const { SIDES, other, projectsZOC, readiness, rawPower } = __M['sim'];
+const { issueOrder } = __M['orders'];
+
+const sideIdx = (s) => (s === 'BLUE' ? 0 : 1);
+
+function aiTurn(game, events, side) {
+  const S = game.sides[side];
+  if (!S.ai) return;
+  const foe = other(side);
+  const A = game.analysis;
+  if (!A) return;
+
+  const mine = game.units.filter(u => u.side === side && u.status !== 'destroyed');
+  const theirs = game.units.filter(u => u.side === foe && u.status !== 'destroyed');
+  const myPower = mine.reduce((s, u) => s + rawPower(u) * readiness(u), 0);
+  const foePower = theirs.reduce((s, u) => s + rawPower(u) * readiness(u), 0);
+  const ratio = myPower / Math.max(1, foePower);
+
+  S.plan = S.plan || {};
+  const wantOffense = ratio > 0.95 && S.aggression > 0.35;
+  S.plan.mode = wantOffense ? 'ofensiva' : (ratio < 0.6 ? 'defensiva' : 'contencion');
+
+  // ── aviacion y logistica ─────────────────────────────────────────────
+  if (S.plan.mode === 'ofensiva') S.air.alloc = { cap: 30, cas: 40, interdiction: 20, recon: 10 };
+  else if (S.plan.mode === 'defensiva') S.air.alloc = { cap: 40, cas: 20, interdiction: 25, recon: 15 };
+  else S.air.alloc = { cap: 35, cas: 25, interdiction: 25, recon: 15 };
+
+  const busy = new Set();
+
+  /**
+   * Fuerza de cobertura: una unidad en contacto que es la unica propia en su
+   * sector no se mueve. Concentrar para el Schwerpunkt es correcto; vaciar el
+   * frente para conseguirlo es como se regala la ofensiva del contrario.
+   */
+  const covering = new Set();
+  for (const u of mine) {
+    if (!projectsZOC(u)) continue;
+    const contacto = neighbors(u.col, u.row).some(([c, r]) =>
+      c >= 0 && r >= 0 && c < game.W && r < game.H && A.owner[r * game.W + c] === sideIdx(foe));
+    if (!contacto) continue;
+    const vecinos = mine.filter(o => o !== u && projectsZOC(o)
+      && distance(o.col, o.row, u.col, u.row) <= 2).length;
+    if (vecinos === 0) covering.add(u.id);
+  }
+  const libre = (u) => !busy.has(u.id) && !covering.has(u.id);
+
+  // ── 1. romper cercos propios ─────────────────────────────────────────
+  for (const p of A.sides[side].pockets) {
+    const target = nearestFriendlyFront(game, side, p.centroid, A.owner);
+    for (const id of p.units) {
+      const u = game.byId[id]; if (!u) continue;
+      u.posture = u.ammo > 25 ? 'ataque' : 'retirada';
+      u.effort = 1.0; u.logPriority = 2;
+      if (target) issueOrder(game, u, { type: 'move', col: target[0], row: target[1] });
+      busy.add(u.id);
+    }
+    // socorro desde fuera
+    const relief = mine.filter(u => libre(u) && u.tpl.exploit > 1.0
+      && distance(u.col, u.row, Math.round(p.centroid[0]), Math.round(p.centroid[1])) < 10)
+      .slice(0, 2);
+    for (const u of relief) {
+      u.posture = 'ataque'; u.effort = 0.95;
+      issueOrder(game, u, { type: 'move', col: Math.round(p.centroid[0]), row: Math.round(p.centroid[1]) });
+      busy.add(u.id);
+    }
+  }
+
+  // ── 2. cortar salientes enemigos vulnerables (formar la pinza) ───────
+  const targetsSal = A.sides[foe].salients.filter(s => s.vulnerable && s.men > 12000).slice(0, 2);
+  for (const sal of targetsSal) {
+    const necks = sal.base.map(i => [i % game.W, (i / game.W) | 0]);
+    if (!necks.length) continue;
+    // dos puntos de aplicacion a ambos lados del cuello
+    necks.sort((a, b) => a[1] - b[1]);
+    const shoulders = [necks[0], necks[necks.length - 1]];
+    for (const sh of shoulders) {
+      const force = mine.filter(u => !busy.has(u.id) && projectsZOC(u) && u.morale > 45
+        && distance(u.col, u.row, sh[0], sh[1]) <= 7)
+        .sort((a, b) => distance(a.col, a.row, sh[0], sh[1]) - distance(b.col, b.row, sh[0], sh[1]))
+        .slice(0, 3);
+      for (const u of force) {
+        u.posture = u.tpl.exploit > 1.2 ? 'ataque' : 'asalto';
+        u.effort = 0.95; u.logPriority = 2;
+        orderAdvance(game, u, sh[0], sh[1], side, covering.has(u.id));
+        busy.add(u.id);
+      }
+    }
+    if (targetsSal.length) {
+      events.push({ t: 'ai', side, quiet: true, txt: `Mando ${side === 'RED' ? 'rojo' : 'azul'}: maniobra de tenaza contra el saliente de ${Math.round(sal.depthKm)} km.` });
+    }
+  }
+
+  // ── 3. cerrar pinzas propias ya iniciadas ────────────────────────────
+  for (const p of A.sides[side].pincers.slice(0, 1)) {
+    if (p.trappedMen < 8000) continue;
+    const mid = p.closureLine[Math.floor(p.closureLine.length / 2)];
+    const force = mine.filter(u => !busy.has(u.id) && projectsZOC(u)
+      && distance(u.col, u.row, mid[0], mid[1]) <= 8)
+      .sort((a, b) => b.tpl.exploit - a.tpl.exploit).slice(0, 4);
+    for (const u of force) {
+      u.posture = 'ataque'; u.effort = 1.0; u.logPriority = 2;
+      orderAdvance(game, u, mid[0], mid[1], side, covering.has(u.id));
+      busy.add(u.id);
+    }
+  }
+
+  // ── 4. Schwerpunkt ofensivo ──────────────────────────────────────────
+  if (S.plan.mode === 'ofensiva') {
+    const axes = pickAxes(game, side, A, 2);
+    for (const ax of axes) {
+      const pool = mine.filter(u => !busy.has(u.id) && projectsZOC(u) && u.tpl.cmdRadius === 0
+        && distance(u.col, u.row, ax.col, ax.row) <= 14 && u.morale > 40 && u.supplyLevel > 20)
+        .sort((a, b) => distance(a.col, a.row, ax.col, ax.row) - distance(b.col, b.row, ax.col, ax.row));
+      const echelon1 = pool.filter(u => u.tpl.exploit < 1.25).slice(0, 5);
+      const echelon2 = pool.filter(u => u.tpl.exploit >= 1.25).slice(0, 4);
+      for (const u of echelon1) {
+        const d = distance(u.col, u.row, ax.col, ax.row);
+        // lejos del contacto se marcha; en contacto se asalta
+        u.posture = d <= 1 ? 'asalto' : d <= 3 ? 'ataque' : 'avance';
+        u.effort = 0.9; u.logPriority = 2;
+        orderAdvance(game, u, ax.col, ax.row, side, covering.has(u.id));
+        busy.add(u.id);
+      }
+      for (const u of echelon2) {
+        u.posture = 'avance'; u.effort = 0.85; u.logPriority = 2;
+        const deep = deepObjective(game, side, ax, A.owner);
+        orderAdvance(game, u, deep[0], deep[1], side, covering.has(u.id));
+        busy.add(u.id);
+      }
+      // artilleria: preparacion sobre el eje
+      const guns = mine.filter(u => !busy.has(u.id) && u.tpl.indRange >= 2 && (u.equip.guns + u.equip.mlrs) > 10);
+      for (const g of guns) {
+        const d = distance(g.col, g.row, ax.col, ax.row);
+        if (d <= g.tpl.indRange) { g.artyMission = 'preparacion'; g.effort = 0.95; busy.add(g.id); }
+        else if (d <= g.tpl.indRange + 6) {
+          issueOrder(game, g, { type: 'move', col: ax.col, row: ax.row });
+          g.artyMission = 'preparacion'; busy.add(g.id);
+        }
+      }
+    }
+  }
+
+  // ── 5. taponar brechas propias ───────────────────────────────────────
+  for (const br of A.sides[side].breaches.slice(0, 3)) {
+    const [bc, br0] = br.centroid.map(Math.round);
+    const res = mine.filter(u => libre(u) && projectsZOC(u) && u.posture === 'reserva')
+      .sort((a, b) => distance(a.col, a.row, bc, br0) - distance(b.col, b.row, bc, br0))[0];
+    if (res) {
+      res.posture = 'defensa'; res.effort = 0.7;
+      issueOrder(game, res, { type: 'move', col: bc, row: br0 });
+      busy.add(res.id);
+      events.push({ t: 'ai', side, quiet: true, txt: `Reserva ${side === 'RED' ? 'roja' : 'azul'} desplazada a la brecha de ${br.widthKm} km.` });
+    }
+  }
+
+  // ── 6. resto del dispositivo: defensa y ataque de oportunidad ───────
+  for (const u of mine) {
+    if (busy.has(u.id)) continue;
+    if (u.tpl.cmdRadius > 0) { keepHQBehindFront(game, u, A.owner); continue; }
+    if (u.tpl.logBoost >= 3) { keepLogisticsForward(game, u, A.owner); continue; }
+    if (u.tpl.indRange >= 2 && (u.equip.guns + u.equip.mlrs) > 10) {
+      u.artyMission = S.plan.mode === 'defensiva' ? 'apoyo'
+        : (game.rng() < 0.3 ? 'contrabateria' : 'apoyo');
+      const near = theirs.filter(e => distance(e.col, e.row, u.col, u.row) <= u.tpl.indRange).length;
+      if (near === 0) {
+        const t = nearestEnemy(game, u, theirs);
+        if (t) issueOrder(game, u, { type: 'move', col: t.col, row: t.row });
+      }
+      continue;
+    }
+    // ataque de oportunidad contra vecinos debiles
+    let best = null, bestScore = 0;
+    for (const [c, r] of neighbors(u.col, u.row)) {
+      if (c < 0 || r < 0 || c >= game.W || r >= game.H) continue;
+      const st = game._occ.list[r * game.W + c];
+      if (!st || !st.length || st[0].side === side) continue;
+      const dPow = st.reduce((s, e) => s + rawPower(e) * readiness(e) * TERRAIN[game.hexes[r * game.W + c].t].def * (1 + e.entrench * 0.16), 0);
+      const aPow = rawPower(u) * readiness(u);
+      const sc = aPow / Math.max(0.01, dPow);
+      if (sc > bestScore) { bestScore = sc; best = [c, r]; }
+    }
+    if (best && bestScore > 1.30 && u.ammo > 35 && S.aggression > 0.3) {
+      u.posture = 'ataque'; u.effort = 0.85;
+      issueOrder(game, u, { type: 'attack', col: best[0], row: best[1] });
+    } else {
+      if (u.posture === 'ataque' || u.posture === 'asalto') u.posture = 'defensa';
+      if (u.morale < 35 || u.supplyLevel < 12) u.posture = 'fortificada';
+      u.effort = 0.55;
+      u.order = null;
+    }
+  }
+}
+
+/** Elige puntos de ruptura: minima densidad defensiva, buen terreno, objetivo con valor. */
+function pickAxes(game, side, A, n) {
+  const foe = other(side), fi = sideIdx(foe), si = sideIdx(side);
+  const cand = [];
+  for (let i = 0; i < game.N; i++) {
+    if (A.owner[i] !== fi) continue;
+    const c = i % game.W, r = (i / game.W) | 0;
+    // debe estar en contacto con nuestro dispositivo
+    if (!neighbors(c, r).some(([cc, rr]) => cc >= 0 && rr >= 0 && cc < game.W && rr < game.H && A.owner[rr * game.W + cc] === si)) continue;
+    const h = game.hexes[i];
+    if (h.t === 'agua' || h.t === 'montana') continue;
+    let def = 0;
+    for (const e of game.units) {
+      if (e.side !== foe || e.status === 'destroyed') continue;
+      const d = distance(e.col, e.row, c, r);
+      if (d <= 3) def += rawPower(e) * readiness(e) / (1 + d * d);
+    }
+    let own = 0;
+    for (const u of game.units) {
+      if (u.side !== side || u.status === 'destroyed') continue;
+      const d = distance(u.col, u.row, c, r);
+      if (d <= 6) own += rawPower(u) * readiness(u) / (1 + d);
+    }
+    let valor = h.vp * 1.5 + (h.road ? 3 : 0) + (h.rail ? 4 : 0);
+    // premiar los ejes que amenazan la retaguardia enemiga
+    const depth = side === 'BLUE' ? (game.W - c) : c;
+    valor += (game.W - depth) * 0.12;
+    const score = own / (1 + def * 2.2) * TERRAIN[h.t].atkFront * (1 + valor * 0.05);
+    cand.push({ i, col: c, row: r, score, def });
+  }
+  cand.sort((a, b) => b.score - a.score);
+  const out = [];
+  for (const c of cand) {
+    if (out.every(o => distance(o.col, o.row, c.col, c.row) > 7)) out.push(c);
+    if (out.length >= n) break;
+  }
+  return out;
+}
+
+function deepObjective(game, side, ax, owner) {
+  const dir = side === 'BLUE' ? 1 : -1;
+  let bestCol = ax.col, bestRow = ax.row, best = -1;
+  for (const [c, r] of disc(ax.col, ax.row, 8)) {
+    if (c < 1 || r < 1 || c >= game.W - 1 || r >= game.H - 1) continue;
+    if ((c - ax.col) * dir < 2) continue;
+    const h = game.hexes[r * game.W + c];
+    if (h.t === 'agua' || h.t === 'montana') continue;
+    const v = (h.vp || 0) * 2 + (h.rail ? 5 : 0) + (h.road ? 2 : 0) + (c - ax.col) * dir;
+    if (v > best) { best = v; bestCol = c; bestRow = r; }
+  }
+  return [bestCol, bestRow];
+}
+
+/**
+ * Orden de avance. Si el objetivo esta contiguo y ocupado, se ataca. Si no, se
+ * busca el hexagono enemigo contiguo que mejor abre camino hacia el objetivo;
+ * solo cuando no hay nadie delante se cursa una orden de marcha. Una unidad que
+ * ya esta sobre su objetivo y tiene enemigo al lado ataca: quedarse quieta es
+ * como se pierden las ofensivas.
+ */
+function orderAdvance(game, u, col, row, side, hold = false) {
+  const ti = row * game.W + col;
+  const stack = game._occ.list[ti] || [];
+  const dT = distance(u.col, u.row, col, row);
+  if (dT === 1 && stack.length && stack[0].side !== side) {
+    issueOrder(game, u, { type: 'attack', col, row });
+    return;
+  }
+  let best = null, bd = 99;
+  for (const [c, r] of neighbors(u.col, u.row)) {
+    if (c < 0 || r < 0 || c >= game.W || r >= game.H) continue;
+    const st = game._occ.list[r * game.W + c];
+    if (!st || !st.length || st[0].side === side) continue;
+    const d = distance(c, r, col, row);
+    if (d < bd) { bd = d; best = [c, r]; }
+  }
+  if (best && (hold || dT <= 1 || bd <= dT)) issueOrder(game, u, { type: 'attack', col: best[0], row: best[1] });
+  else if (hold) u.order = null;                       // fuerza de cobertura: no abandona el sector
+  else if (dT > 0) issueOrder(game, u, { type: 'move', col, row });
+  else u.order = null;
+}
+
+function nearestEnemy(game, u, theirs) {
+  let best = null, bd = 1e9;
+  for (const e of theirs) {
+    const d = distance(u.col, u.row, e.col, e.row);
+    if (d < bd) { bd = d; best = e; }
+  }
+  return best;
+}
+
+function nearestFriendlyFront(game, side, centroid, owner) {
+  const si = sideIdx(side);
+  const [cc, cr] = centroid.map(Math.round);
+  let best = null, bd = 1e9;
+  for (const u of game.units) {
+    if (u.side !== side || u.status === 'destroyed') continue;
+    if (u.supplyLevel < 25) continue;
+    const d = distance(u.col, u.row, cc, cr);
+    if (d < bd && d > 1) { bd = d; best = [u.col, u.row]; }
+  }
+  return best;
+}
+
+function keepHQBehindFront(game, u, owner) {
+  const si = sideIdx(u.side);
+  const subs = game.units.filter(x => x.hqId === u.id && x.status !== 'destroyed');
+  if (!subs.length) return;
+  const cx = Math.round(subs.reduce((s, x) => s + x.col, 0) / subs.length);
+  const cy = Math.round(subs.reduce((s, x) => s + x.row, 0) / subs.length);
+  const back = u.side === 'BLUE' ? -3 : 3;
+  const tc = Math.max(1, Math.min(game.W - 2, cx + back));
+  if (distance(u.col, u.row, tc, cy) > 2) issueOrder(game, u, { type: 'move', col: tc, row: cy });
+  u.posture = 'reserva';
+}
+
+function keepLogisticsForward(game, u, owner) {
+  const si = sideIdx(u.side);
+  // situarse donde la traza propia empieza a decaer, sin entrar en contacto
+  let best = null, bs = -1e9;
+  for (const [c, r] of disc(u.col, u.row, 7)) {
+    if (c < 1 || r < 1 || c >= game.W - 1 || r >= game.H - 1) continue;
+    const i = r * game.W + c;
+    if (owner[i] !== si) continue;
+    const sl = game._supply[u.side].level[i];
+    if (sl < 18 || sl > 55) continue;
+    const ez = game._zoc[other(u.side)][i];
+    if (ez) continue;
+    const s = -Math.abs(sl - 34) + (game.hexes[i].road ? 6 : 0) + (game.hexes[i].rail ? 4 : 0);
+    if (s > bs) { bs = s; best = [c, r]; }
+  }
+  if (best) issueOrder(game, u, { type: 'move', col: best[0], row: best[1] });
+  u.posture = 'reserva';
+}
+
+return { aiTurn };
+})();
+
+/* ── scenario.js ── */
+__M['scenario'] = (function(){
+// Definicion del escenario y construccion del estado inicial de la campaña.
+const { makeRng } = __M['rng'];
+const { generateTheater, assignSupplyBases } = __M['worldgen'];
+const { buildArmy } = __M['units'];
+const { SIDES, occupancy, computeZOC, computeSupply, computeDetection } = __M['sim'];
+const { analyze } = __M['analysis'];
+
+const MAP_W = 56, MAP_H = 30;
+
+function newSide(name, color, opts) {
+  return {
+    name, color, doctrine: opts.doctrine, ai: opts.ai, aggression: opts.aggression ?? 0.6,
+    bases: [], logRangeBase: opts.logRange, logRange: opts.logRange, transportPush: 50,
+    stockpile: 420, stockpileMax: 700, production: opts.production, demand: 0,
+    replacements: opts.replacements,
+    air: {
+      capacity: opts.airCapacity, readiness: 92, quality: opts.airQuality,
+      alloc: { cap: 35, cas: 30, interdiction: 20, recon: 15 }, sorties: 0,
+    },
+    airSuperiority: 0, interdictedBy: 0, counterBatteryPenalty: 0,
+    casualties: { total: 0, pow: 0 }, vp: 0, plan: {},
+  };
+}
+
+function createGame(seed, { W = MAP_W, H = MAP_H } = {}) {
+  const rng = makeRng(seed);
+  const world = generateTheater(W, H, rng);
+  const game = {
+    seed, W, H, N: W * H, hexes: world.hexes, cities: world.cities, rng,
+    turn: 0, time: { day: 1, hour: 5 }, season: 'otoño',
+    weather: { type: 'despejado', ground: 'firme' },
+    player: 'BLUE',
+    sides: {
+      BLUE: newSide('Fuerzas Azules', '#5b8fd4', {
+        doctrine: 'profunda', ai: false, logRange: 60, production: 52,
+        replacements: 70000, airCapacity: 140, airQuality: 0.6,
+      }),
+      RED: newSide('Fuerzas Rojas', '#c9584c', {
+        doctrine: 'elastica', ai: true, aggression: 0.55, logRange: 56, production: 46,
+        replacements: 62000, airCapacity: 115, airQuality: 0.45,
+      }),
+    },
+    units: [], byId: {}, _supply: {}, analysis: null, over: null,
+  };
+
+  game.sides.BLUE.bases = assignSupplyBases(world, 'BLUE', 'W');
+  game.sides.RED.bases = assignSupplyBases(world, 'RED', 'E');
+
+  const blue = buildArmy(world, 'BLUE', rng, {
+    armyName: '1.er Ejército «Adalid»',
+    corpsNames: ['Hierro', 'Tormenta', 'Lanza'],
+    corps: [
+      { line: ['mech', 'mech', 'inf', 'inf'], support: ['arty', 'eng', 'recon'] },
+      { line: ['arm', 'mech', 'inf', 'inf'], support: ['arty', 'rocket', 'eng'] },
+      { line: ['inf', 'inf', 'mtz', 'inf'], support: ['arty', 'aa', 'log'] },
+    ],
+    reserve: ['gd', 'arm', 'mech', 'rocket', 'log', 'para'],
+    frontCol: Math.round(W * 0.44), supportCol: Math.round(W * 0.33), hqCol: Math.round(W * 0.26),
+    rearCol: Math.round(W * 0.12), reserveCol: Math.round(W * 0.22),
+    startPosture: 'defensa', startEntrench: 1.5,
+  });
+  const red = buildArmy(world, 'RED', rng, {
+    armyName: '4.º Ejército «Baluarte»',
+    corpsNames: ['Roble', 'Yunque', 'Granito'],
+    corps: [
+      { line: ['inf', 'inf', 'inf', 'mtz'], support: ['arty', 'eng', 'aa'] },
+      { line: ['inf', 'mech', 'inf', 'inf'], support: ['arty', 'rocket', 'log'] },
+      { line: ['inf', 'inf', 'mtn', 'inf'], support: ['arty', 'eng', 'recon'] },
+    ],
+    reserve: ['arm', 'mech', 'arm', 'log', 'aa'],
+    frontCol: Math.round(W * 0.54), supportCol: Math.round(W * 0.65), hqCol: Math.round(W * 0.72),
+    rearCol: Math.round(W * 0.87), reserveCol: Math.round(W * 0.78),
+    startPosture: 'fortificada', startEntrench: 3.0,
+  });
+  game.units = [...blue, ...red];
+  for (const u of game.units) game.byId[u.id] = u;
+
+  game._occ = occupancy(game);
+  game._zoc = computeZOC(game);
+  for (const s of SIDES) game._supply[s] = computeSupply(game, s);
+  computeDetection(game);
+  for (const u of game.units) u.supplyLevel = game._supply[u.side].level[u.row * game.W + u.col];
+  analyze(game);
+  return game;
+}
+
+return { createGame, MAP_W, MAP_H };
+})();
+
+/* ── render.js ── */
+__M['render'] = (function(){
+// Dibujo del teatro. La lectura del mapa es la mitad del juego: el frente, los
+// salientes, las bolsas y las pinzas se pintan como los pintaria un oficial de
+// operaciones sobre el calco de situacion.
+const { hexToPixel, pixelToHex, hexCorners, neighbors, neighbor, distance, HEX_KM } = __M['hex'];
+const { TERRAIN } = __M['terrain'];
+const { SIDES, other, projectsZOC } = __M['sim'];
+
+const SIDE_COL = { BLUE: '#5b8fd4', RED: '#c9584c' };
+const SIDE_FILL = { BLUE: 'rgba(80,130,200,0.13)', RED: 'rgba(200,72,58,0.13)' };
+const SIDE_DEEP = { BLUE: 'rgba(80,130,200,0.24)', RED: 'rgba(200,72,58,0.24)' };
+
+class Renderer {
+  constructor(canvas, game, ui) {
+    this.cv = canvas; this.ctx = canvas.getContext('2d');
+    this.game = game; this.ui = ui;
+    this.cam = { x: 0, y: 0, z: 1 };
+    this.base = 19;
+    this.layers = {};
+    this.t0 = performance.now();
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+  }
+  resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const r = this.cv.getBoundingClientRect();
+    this.cv.width = Math.max(1, r.width * dpr);
+    this.cv.height = Math.max(1, r.height * dpr);
+    this.dpr = dpr; this.vw = r.width; this.vh = r.height;
+  }
+  get size() { return this.base * this.cam.z; }
+  worldOf(col, row) { return hexToPixel(col, row, this.size); }
+  toScreen(wx, wy) { return [wx - this.cam.x, wy - this.cam.y]; }
+  screenToHex(sx, sy) { return pixelToHex(sx + this.cam.x, sy + this.cam.y, this.size); }
+  centerOn(col, row) {
+    const [wx, wy] = this.worldOf(col, row);
+    this.cam.x = wx - this.vw / 2; this.cam.y = wy - this.vh / 2;
+  }
+  /** Encuadra el teatro completo: el mando ve primero el conjunto del frente. */
+  fitTheater(margin = 24) {
+    const g = this.game;
+    const wWorld = (g.W + 0.5) * Math.sqrt(3) * this.base;
+    const hWorld = (g.H * 1.5 + 0.5) * this.base;
+    this.cam.z = Math.max(0.42, Math.min(3.2,
+      Math.min((this.vw - margin) / wWorld, (this.vh - margin) / hWorld)));
+    this.centerOn((g.W - 1) / 2, (g.H - 1) / 2);
+  }
+  zoomAt(sx, sy, factor) {
+    const oldS = this.size;
+    const wx = sx + this.cam.x, wy = sy + this.cam.y;
+    this.cam.z = Math.max(0.42, Math.min(3.2, this.cam.z * factor));
+    const k = this.size / oldS;
+    this.cam.x = wx * k - sx; this.cam.y = wy * k - sy;
+  }
+
+  visibleRange() {
+    const s = this.size;
+    const r0 = Math.max(0, Math.floor(this.cam.y / (s * 1.5)) - 2);
+    const r1 = Math.min(this.game.H - 1, Math.ceil((this.cam.y + this.vh) / (s * 1.5)) + 2);
+    const c0 = Math.max(0, Math.floor(this.cam.x / (s * Math.sqrt(3))) - 2);
+    const c1 = Math.min(this.game.W - 1, Math.ceil((this.cam.x + this.vw) / (s * Math.sqrt(3))) + 2);
+    return [c0, r0, c1, r1];
+  }
+
+  hexPath(ctx, cx, cy, s, shrink = 1) {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = Math.PI / 180 * (60 * i - 30);
+      const x = cx + s * shrink * Math.cos(a), y = cy + s * shrink * Math.sin(a);
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.closePath();
+  }
+
+  draw() {
+    const g = this.game, ctx = this.ctx, L = this.ui.layers;
+    const time = (performance.now() - this.t0) / 1000;
+    ctx.save();
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    ctx.fillStyle = '#0a0d10';
+    ctx.fillRect(0, 0, this.vw, this.vh);
+
+    const s = this.size;
+    const [c0, r0, c1, r1] = this.visibleRange();
+    const A = g.analysis;
+    const seen = this.visibilityMask();
+    this._labels = [];
+
+    // ── 1. terreno ────────────────────────────────────────────────────
+    for (let row = r0; row <= r1; row++) {
+      for (let col = c0; col <= c1; col++) {
+        const i = row * g.W + col, h = g.hexes[i];
+        const [wx, wy] = hexToPixel(col, row, s);
+        const x = wx - this.cam.x, y = wy - this.cam.y;
+        const T = TERRAIN[h.t];
+        this.hexPath(ctx, x, y, s);
+        const sh = 0.82 + 0.36 * h.elev;
+        ctx.fillStyle = shade(T.color, sh * (L.fog && !seen[i] ? 0.55 : 1));
+        ctx.fill();
+        if (h.city) {
+          ctx.fillStyle = 'rgba(0,0,0,.30)';
+          ctx.beginPath(); ctx.arc(x, y, s * 0.42, 0, 7); ctx.fill();
+        }
+      }
+    }
+
+    // ── 2. control territorial ───────────────────────────────────────
+    if (L.control && A) {
+      for (let row = r0; row <= r1; row++) {
+        for (let col = c0; col <= c1; col++) {
+          const i = row * g.W + col;
+          const sd = SIDES[A.owner[i]];
+          const [wx, wy] = hexToPixel(col, row, s);
+          const enc = A.sides[sd].enclosure[i] || 0;
+          this.hexPath(ctx, wx - this.cam.x, wy - this.cam.y, s);
+          ctx.fillStyle = enc > 0.4 ? SIDE_DEEP[sd] : SIDE_FILL[sd];
+          ctx.fill();
+        }
+      }
+    }
+
+    // ── 3. mapas de calor ────────────────────────────────────────────
+    if (L.supply) this.heat(ctx, (i) => g._supply[g.player].level[i] / 100, '#3fa8c8', c0, r0, c1, r1);
+    if (L.threat) this.heat(ctx, (i) => this.threatAt(i), '#d24a3a', c0, r0, c1, r1);
+
+    // ── 4. rios, carreteras, ferrocarril ─────────────────────────────
+    ctx.lineCap = 'round';
+    for (let row = r0; row <= r1; row++) {
+      for (let col = c0; col <= c1; col++) {
+        const i = row * g.W + col, h = g.hexes[i];
+        const [wx, wy] = hexToPixel(col, row, s);
+        const x = wx - this.cam.x, y = wy - this.cam.y;
+        if (h.road) {
+          const nb = neighbors(col, row);
+          for (let d = 0; d < 3; d++) {
+            const [nc, nr] = nb[d];
+            if (nc < 0 || nr < 0 || nc >= g.W || nr >= g.H) continue;
+            const o = g.hexes[nr * g.W + nc];
+            if (!o.road) continue;
+            const [ox, oy] = hexToPixel(nc, nr, s);
+            ctx.strokeStyle = (h.road >= 2 && o.road >= 2) ? 'rgba(212,190,140,.75)' : 'rgba(180,165,130,.45)';
+            ctx.lineWidth = (h.road >= 2 && o.road >= 2) ? Math.max(1.4, s * 0.11) : Math.max(0.8, s * 0.06);
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ox - this.cam.x, oy - this.cam.y); ctx.stroke();
+          }
+        }
+        if (h.rail && s > 9) {
+          ctx.strokeStyle = 'rgba(40,40,45,.75)'; ctx.lineWidth = 1;
+          ctx.setLineDash([3, 3]);
+          const nb = neighbors(col, row);
+          for (let d = 0; d < 3; d++) {
+            const [nc, nr] = nb[d];
+            if (nc < 0 || nr < 0 || nc >= g.W || nr >= g.H) continue;
+            if (!g.hexes[nr * g.W + nc].rail) continue;
+            const [ox, oy] = hexToPixel(nc, nr, s);
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ox - this.cam.x, oy - this.cam.y); ctx.stroke();
+          }
+          ctx.setLineDash([]);
+        }
+        for (let d = 0; d < 6; d++) {
+          if (!h.river[d]) continue;
+          const [ax, ay, bx, by] = this.edgePoints(x, y, d, s);
+          ctx.strokeStyle = h.bridge[d] ? 'rgba(120,180,210,.5)' : '#3d7f9e';
+          ctx.lineWidth = Math.max(1.4, s * 0.13);
+          ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+          if (h.bridge[d]) {
+            ctx.strokeStyle = '#d8c48a'; ctx.lineWidth = Math.max(1, s * 0.07);
+            ctx.beginPath(); ctx.moveTo((ax + bx) / 2 - 2, (ay + by) / 2); ctx.lineTo((ax + bx) / 2 + 2, (ay + by) / 2); ctx.stroke();
+          }
+        }
+      }
+    }
+
+    // ── 5. retícula ──────────────────────────────────────────────────
+    if (L.grid) {
+      ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.lineWidth = 0.6;
+      for (let row = r0; row <= r1; row++) for (let col = c0; col <= c1; col++) {
+        const [wx, wy] = hexToPixel(col, row, s);
+        this.hexPath(ctx, wx - this.cam.x, wy - this.cam.y, s); ctx.stroke();
+      }
+    }
+
+    // ── 6. ciudades ──────────────────────────────────────────────────
+    for (let row = r0; row <= r1; row++) {
+      for (let col = c0; col <= c1; col++) {
+        const h = g.hexes[row * g.W + col];
+        if (!h.city) continue;
+        const [wx, wy] = hexToPixel(col, row, s);
+        const x = wx - this.cam.x, y = wy - this.cam.y;
+        ctx.fillStyle = '#d8d2c2'; ctx.strokeStyle = '#20242a'; ctx.lineWidth = 1;
+        const r = s * (0.14 + h.city.size * 0.045);
+        ctx.beginPath(); ctx.rect(x - r, y - r, r * 2, r * 2); ctx.fill(); ctx.stroke();
+        if (s > 13) {
+          ctx.font = `${Math.round(s * 0.46)}px "Barlow Condensed", system-ui, sans-serif`;
+          ctx.textAlign = 'center'; ctx.lineWidth = 3;
+          ctx.strokeStyle = 'rgba(0,0,0,.8)';
+          ctx.strokeText(h.city.name, x, y - r - 3);
+          ctx.fillStyle = '#efe8d6'; ctx.fillText(h.city.name, x, y - r - 3);
+        }
+      }
+    }
+
+    // ── 7. red logistica del jugador ─────────────────────────────────
+    if (L.supply) this.drawSupplyNet(ctx, s);
+
+    // ── 8. linea de contacto ─────────────────────────────────────────
+    if (L.front && A) {
+      ctx.lineCap = 'round';
+      for (const [i, d] of A.front) {
+        const col = i % g.W, row = (i / g.W) | 0;
+        if (col < c0 - 2 || col > c1 + 2 || row < r0 - 2 || row > r1 + 2) continue;
+        const [wx, wy] = hexToPixel(col, row, s);
+        const [ax, ay, bx, by] = this.edgePoints(wx - this.cam.x, wy - this.cam.y, d, s);
+        ctx.strokeStyle = 'rgba(20,22,26,.85)'; ctx.lineWidth = Math.max(2.4, s * 0.20);
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+        ctx.strokeStyle = '#e8dfc8'; ctx.lineWidth = Math.max(1.2, s * 0.10);
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+      }
+    }
+
+    // ── 9. formas operacionales ──────────────────────────────────────
+    if (A) {
+      // Los contornos se pintan primero y los rotulos despues, por orden de
+      // importancia: cerco, pinza y luego saliente. Asi, cuando el calco se
+      // llena, lo que sobrevive es lo que decide la batalla.
+      if (L.salients) for (const sd of SIDES) {
+        for (const sal of A.sides[sd].salients) {
+          this.outline(ctx, sal.cells, sal.vulnerable ? '#e0a83a' : 'rgba(224,168,58,.45)',
+            Math.max(1.6, s * 0.09), [6, 4], time * 14);
+        }
+      }
+      for (const sd of SIDES) {
+        const a = A.sides[sd];
+        if (L.pockets) for (const p of a.pockets) {
+          const pulse = 0.55 + 0.45 * Math.sin(time * 3);
+          this.fillCells(ctx, p.cells, `rgba(212,60,48,${0.16 + 0.12 * pulse})`);
+          this.outline(ctx, p.cells, p.sealed ? `rgba(255,80,60,${0.6 + 0.4 * pulse})` : '#e08a3a',
+            Math.max(2, s * 0.13), p.sealed ? [] : [8, 5], 0);
+          this.label(ctx, p.centroid,
+            p.sealed ? `⊗ CERCO — ${sd === 'BLUE' ? 'AZUL' : 'ROJO'}` : `BOLSA — ${sd === 'BLUE' ? 'AZUL' : 'ROJO'}`,
+            `${p.units.length} unid · ${fmt(p.men)} h · ${p.areaKm2} km² · ${p.turnsIsolated} turnos aislado`,
+            p.sealed ? '#ff6a55' : '#e08a3a', s);
+        }
+        if (L.pincers) for (const p of a.pincers) {
+          this.drawPincer(ctx, p, sd, s, time);
+        }
+      }
+      if (L.salients) for (const sd of SIDES) {
+        for (const sal of A.sides[sd].salients.slice(0, 2)) {
+          this.label(ctx, sal.centroid, `SALIENTE ${sd === 'BLUE' ? 'AZUL' : 'ROJO'}`,
+            `${Math.round(sal.depthKm)} km prof · cuello ${Math.round(sal.neckKm)} km` +
+            (sal.vulnerable ? ' · VULNERABLE' : ''), '#e0a83a', s);
+        }
+      }
+    }
+
+    // ── 10. vectores de avance ───────────────────────────────────────
+    if (L.advance && A) {
+      for (const v of A.advance) {
+        const u = g.byId[v.id];
+        if (!u) continue;
+        if (u.side !== g.player && (u.detectedBy?.[g.player] ?? 0) < 45 && L.fog) continue;
+        const [fx, fy] = hexToPixel(v.from[0], v.from[1], s);
+        const [tx, ty] = hexToPixel(v.to[0], v.to[1], s);
+        ctx.globalAlpha = 0.55;
+        arrow(ctx, fx - this.cam.x, fy - this.cam.y, tx - this.cam.x, ty - this.cam.y,
+          SIDE_COL[v.side], Math.max(1.4, s * 0.08), s * 0.5);
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // ── 11. unidades ─────────────────────────────────────────────────
+    for (const u of g.units) {
+      if (u.status === 'destroyed') continue;
+      const vis = this.unitVisibility(u);
+      if (vis === 0) continue;
+      this.drawUnit(ctx, u, s, vis, time);
+    }
+
+    // ── 12. seleccion y orden en curso ───────────────────────────────
+    const sel = this.ui.selected;
+    if (sel && sel.status !== 'destroyed') {
+      const [wx, wy] = hexToPixel(sel.col, sel.row, s);
+      this.hexPath(ctx, wx - this.cam.x, wy - this.cam.y, s, 0.97);
+      ctx.strokeStyle = '#f2d489'; ctx.lineWidth = 2.2;
+      ctx.setLineDash([5, 3]); ctx.lineDashOffset = -time * 12; ctx.stroke(); ctx.setLineDash([]);
+      const o = sel.order || sel.pending;
+      if (o) {
+        const [tx, ty] = hexToPixel(o.col, o.row, s);
+        arrow(ctx, wx - this.cam.x, wy - this.cam.y, tx - this.cam.x, ty - this.cam.y,
+          o.type === 'attack' ? '#ff7a5c' : '#f2d489', 2, s * 0.55);
+        if (sel.pending) {
+          ctx.fillStyle = '#f2d489'; ctx.font = `${Math.round(s * 0.45)}px "IBM Plex Mono", ui-monospace, monospace`;
+          ctx.textAlign = 'center';
+          ctx.fillText(`+${o.activeTurn - g.turn}T`, tx - this.cam.x, ty - this.cam.y - s * 0.9);
+        }
+      }
+      if (this.ui.hoverPath) {
+        ctx.strokeStyle = 'rgba(242,212,137,.6)'; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        let first = true;
+        for (const i of this.ui.hoverPath) {
+          const [px, py] = hexToPixel(i % g.W, (i / g.W) | 0, s);
+          first ? (ctx.moveTo(px - this.cam.x, py - this.cam.y), first = false)
+            : ctx.lineTo(px - this.cam.x, py - this.cam.y);
+        }
+        ctx.stroke(); ctx.setLineDash([]);
+      }
+    }
+    ctx.restore();
+  }
+
+  // ── auxiliares de dibujo ───────────────────────────────────────────
+  edgePoints(cx, cy, d, s) {
+    // arista compartida con el vecino d: perpendicular al vector de centros
+    const angs = [0, -60, -120, 180, 120, 60];
+    const a = Math.PI / 180 * angs[d];
+    const dx = Math.cos(a) * s * Math.sqrt(3) / 2, dy = Math.sin(a) * s * Math.sqrt(3) / 2;
+    const mx = cx + dx, my = cy + dy;
+    const px = -dy / (s * Math.sqrt(3) / 2) * (s / 2), py = dx / (s * Math.sqrt(3) / 2) * (s / 2);
+    return [mx + px, my + py, mx - px, my - py];
+  }
+
+  fillCells(ctx, cells, style) {
+    const s = this.size, g = this.game;
+    ctx.fillStyle = style;
+    for (const i of cells) {
+      const [wx, wy] = hexToPixel(i % g.W, (i / g.W) | 0, s);
+      const x = wx - this.cam.x, y = wy - this.cam.y;
+      if (x < -s * 2 || y < -s * 2 || x > this.vw + s * 2 || y > this.vh + s * 2) continue;
+      this.hexPath(ctx, x, y, s); ctx.fill();
+    }
+  }
+
+  /** Contorno de un conjunto de hexagonos: solo las aristas de borde. */
+  outline(ctx, cells, style, lw, dash, offset) {
+    const s = this.size, g = this.game, set = new Set(cells);
+    ctx.strokeStyle = style; ctx.lineWidth = lw;
+    ctx.setLineDash(dash); ctx.lineDashOffset = -offset;
+    ctx.beginPath();
+    for (const i of cells) {
+      const col = i % g.W, row = (i / g.W) | 0;
+      const [wx, wy] = hexToPixel(col, row, s);
+      const x = wx - this.cam.x, y = wy - this.cam.y;
+      if (x < -s * 3 || y < -s * 3 || x > this.vw + s * 3 || y > this.vh + s * 3) continue;
+      const nb = neighbors(col, row);
+      for (let d = 0; d < 6; d++) {
+        const [nc, nr] = nb[d];
+        const j = nr * g.W + nc;
+        const outside = nc < 0 || nr < 0 || nc >= g.W || nr >= g.H || !set.has(j);
+        if (!outside) continue;
+        const [ax, ay, bx, by] = this.edgePoints(x, y, d, s);
+        ctx.moveTo(ax, ay); ctx.lineTo(bx, by);
+      }
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  /** Rotulo de una forma operacional, con desplazamiento para no pisar a otro. */
+  label(ctx, centroid, title, sub, color, s) {
+    const [wx, wy] = hexToPixel(centroid[0], centroid[1], s);
+    let x = wx - this.cam.x, y = wy - this.cam.y;
+    if (x < -200 || y < -80 || x > this.vw + 200 || y > this.vh + 80) return;
+    ctx.textAlign = 'center';
+    const fTitle = `600 ${Math.max(10, Math.round(s * 0.55))}px "Barlow Condensed", system-ui, sans-serif`;
+    const fSub = `${Math.max(9, Math.round(s * 0.42))}px "IBM Plex Mono", ui-monospace, monospace`;
+    ctx.font = fTitle; const wT = ctx.measureText(title).width;
+    ctx.font = fSub; const wS = ctx.measureText(sub).width;
+    const w = Math.max(wT, wS) + 18;
+    ctx.font = fTitle;
+    // el calco se vuelve ilegible si los rotulos se solapan: se busca hueco
+    const hits = (yy) => this._labels.some(L =>
+      Math.abs(L.x - x) < (L.w + w) / 2 && Math.abs(L.y - yy) < 36);
+    let tries = 0;
+    while (hits(y) && tries < 8) { y += (tries % 2 ? -1 : 1) * 36 * Math.ceil((tries + 1) / 2); tries++; }
+    if (hits(y)) return;
+    this._labels.push({ x, y, w });
+    ctx.fillStyle = 'rgba(8,11,14,.82)';
+    roundRect(ctx, x - w / 2, y - 17, w, 32, 4); ctx.fill();
+    ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = color; ctx.fillText(title, x, y - 4);
+    ctx.font = fSub;
+    ctx.fillStyle = '#cbd4dc'; ctx.fillText(sub, x, y + 9);
+  }
+
+  drawPincer(ctx, p, side, s, time) {
+    const g = this.game;
+    const tip = (i) => { const [x, y] = hexToPixel(i % g.W, (i / g.W) | 0, s); return [x - this.cam.x, y - this.cam.y]; };
+    const c = (arr) => { const [x, y] = hexToPixel(arr[0], arr[1], s); return [x - this.cam.x, y - this.cam.y]; };
+    const A = tip(p.armA.tip), B = tip(p.armB.tip);
+    const mid = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2];
+    const baseA = c(p.armA.centroid), baseB = c(p.armB.centroid);
+    const col = '#f0cc4a';
+    arrow(ctx, baseA[0], baseA[1], A[0], A[1], col, Math.max(2.4, s * 0.14), s * 0.75);
+    arrow(ctx, baseB[0], baseB[1], B[0], B[1], col, Math.max(2.4, s * 0.14), s * 0.75);
+    ctx.strokeStyle = `rgba(240,204,74,${0.55 + 0.35 * Math.sin(time * 4)})`;
+    ctx.lineWidth = Math.max(2, s * 0.11);
+    ctx.setLineDash([7, 6]); ctx.lineDashOffset = -time * 22;
+    ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke();
+    ctx.setLineDash([]);
+    this.label(ctx, [(p.armA.tip % g.W + p.armB.tip % g.W) / 2,
+    (((p.armA.tip / g.W) | 0) + ((p.armB.tip / g.W) | 0)) / 2],
+      `⇉ PINZA ${side === 'BLUE' ? 'AZUL' : 'ROJA'} — brecha ${p.gapKm} km`,
+      `al cerrar: ${fmt(p.trappedMen)} h · ${p.trappedUnits.length} unid · ${p.trappedAreaKm2} km²`, col, s);
+  }
+
+  heat(ctx, fn, color, c0, r0, c1, r1) {
+    const g = this.game, s = this.size;
+    for (let row = r0; row <= r1; row++) for (let col = c0; col <= c1; col++) {
+      const i = row * g.W + col;
+      const v = fn(i);
+      if (v <= 0.02) continue;
+      const [wx, wy] = hexToPixel(col, row, s);
+      this.hexPath(ctx, wx - this.cam.x, wy - this.cam.y, s);
+      ctx.fillStyle = hexA(color, Math.min(0.55, v * 0.55)); ctx.fill();
+    }
+  }
+
+  threatAt(i) {
+    const g = this.game, foe = other(g.player);
+    const col = i % g.W, row = (i / g.W) | 0;
+    let t = 0;
+    for (const u of g.units) {
+      if (u.side !== foe || u.status === 'destroyed') continue;
+      if ((u.detectedBy?.[g.player] ?? 0) < 30) continue;
+      const d = distance(u.col, u.row, col, row);
+      if (d > 6) continue;
+      t += (u.personnel / 15000) / (1 + d * d * 0.4);
+    }
+    return Math.min(1, t);
+  }
+
+  drawSupplyNet(ctx, s) {
+    const g = this.game, sup = g._supply[g.player];
+    ctx.lineWidth = Math.max(1, s * 0.08);
+    for (let i = 0; i < g.N; i++) {
+      if (sup.level[i] < 5) continue;
+      const col = i % g.W, row = (i / g.W) | 0;
+      const [wx, wy] = hexToPixel(col, row, s);
+      const x = wx - this.cam.x, y = wy - this.cam.y;
+      if (x < -s || y < -s || x > this.vw + s || y > this.vh + s) continue;
+      const nb = neighbors(col, row);
+      for (let d = 0; d < 3; d++) {
+        const [nc, nr] = nb[d];
+        if (nc < 0 || nr < 0 || nc >= g.W || nr >= g.H) continue;
+        const j = nr * g.W + nc;
+        if (sup.level[j] < 5) continue;
+        const v = Math.min(sup.level[i], sup.level[j]) / 100;
+        const [ox, oy] = hexToPixel(nc, nr, s);
+        ctx.strokeStyle = `rgba(90,200,230,${0.06 + v * 0.30})`;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ox - this.cam.x, oy - this.cam.y); ctx.stroke();
+      }
+    }
+    for (const bi of g.sides[g.player].bases) {
+      const [wx, wy] = hexToPixel(bi % g.W, (bi / g.W) | 0, s);
+      ctx.fillStyle = '#6ad2f0';
+      ctx.beginPath(); ctx.arc(wx - this.cam.x, wy - this.cam.y, s * 0.3, 0, 7); ctx.fill();
+    }
+  }
+
+  visibilityMask() {
+    const g = this.game;
+    if (!this.ui.layers.fog) return null;
+    if (this._maskTurn === g.turn && this._mask) return this._mask;
+    const m = new Uint8Array(g.N);
+    for (const u of g.units) {
+      if (u.side !== g.player || u.status === 'destroyed') continue;
+      const R = Math.round(TERRAIN[g.hexes[u.row * g.W + u.col].t].sight * Math.min(2.2, u.tpl.recon));
+      for (let dr = -R; dr <= R; dr++) for (let dc = -R; dc <= R; dc++) {
+        const c = u.col + dc, r = u.row + dr;
+        if (c < 0 || r < 0 || c >= g.W || r >= g.H) continue;
+        if (distance(u.col, u.row, c, r) <= R) m[r * g.W + c] = 1;
+      }
+    }
+    for (let i = 0; i < g.N; i++) if (g._supply[g.player].level[i] > 8) m[i] = 1;
+    this._mask = m; this._maskTurn = g.turn;
+    return m;
+  }
+
+  unitVisibility(u) {
+    const g = this.game;
+    if (u.side === g.player) return 2;
+    if (!this.ui.layers.fog) return 2;
+    const d = u.detectedBy?.[g.player] ?? 0;
+    if (d >= 65) return 2;
+    if (d >= 25) return 1;
+    return g.turn - u.lastSeenTurn <= 3 && u.lastSeen ? 1 : 0;
+  }
+
+  drawUnit(ctx, u, s, vis, time) {
+    const g = this.game;
+    const pos = (vis === 1 && u.side !== g.player && u.lastSeen) ? u.lastSeen : [u.col, u.row];
+    const [wx, wy] = hexToPixel(pos[0], pos[1], s);
+    const x = wx - this.cam.x, y = wy - this.cam.y;
+    if (x < -40 || y < -40 || x > this.vw + 40 || y > this.vh + 40) return;
+    const w = s * 1.02, h = s * 0.66;
+    const col = SIDE_COL[u.side];
+
+    ctx.globalAlpha = vis === 1 ? 0.45 : 1;
+    ctx.fillStyle = u.side === g.player ? 'rgba(24,42,70,.95)' : 'rgba(62,24,22,.95)';
+    ctx.strokeStyle = u.status === 'routed' ? '#e0b040' : col;
+    ctx.lineWidth = u === this.ui.selected ? 2.4 : 1.4;
+    roundRect(ctx, x - w / 2, y - h / 2, w, h, 2); ctx.fill(); ctx.stroke();
+
+    if (vis === 2 || u.side === g.player) {
+      drawSymbol(ctx, u.tpl.symbol, x, y, w, h, col);
+      // escalon
+      if (s > 12) {
+        ctx.fillStyle = '#cfd8e0'; ctx.font = `${Math.round(s * 0.32)}px "IBM Plex Mono", ui-monospace, monospace`;
+        ctx.textAlign = 'center';
+        const ech = u.tpl.cmdRadius >= 15 ? 'XXXX' : u.tpl.cmdRadius > 0 ? 'XXX'
+          : /Brigada|Regimiento/.test(u.tpl.name) ? 'X' : 'XX';
+        ctx.fillText(ech, x, y - h / 2 - 1.5);
+      }
+      // barras de estado: efectivos / moral / abastecimiento
+      if (s > 11) {
+        const bw = w, bh = Math.max(1.6, s * 0.075);
+        const bars = [
+          [u.personnel / u.personnelMax, '#7fc98a'],
+          [u.morale / 100, '#d8c46a'],
+          [Math.min(1, u.supplyLevel / 100), '#5fc0da'],
+        ];
+        bars.forEach((b, k) => {
+          const by = y + h / 2 + 1 + k * (bh + 0.8);
+          ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(x - bw / 2, by, bw, bh);
+          ctx.fillStyle = b[1]; ctx.fillRect(x - bw / 2, by, bw * Math.max(0, Math.min(1, b[0])), bh);
+        });
+      }
+      // indicadores
+      if (u.supplyLevel < 3) {
+        ctx.fillStyle = `rgba(255,80,60,${0.6 + 0.4 * Math.sin(time * 5)})`;
+        ctx.font = `bold ${Math.round(s * 0.5)}px "Barlow Condensed", system-ui, sans-serif`; ctx.textAlign = 'left';
+        ctx.fillText('⊗', x + w / 2 - 1, y - h / 2 + s * 0.42);
+      } else if (u.supplyLevel < 25) {
+        ctx.fillStyle = '#e0a040'; ctx.font = `bold ${Math.round(s * 0.42)}px "Barlow Condensed", system-ui, sans-serif`;
+        ctx.textAlign = 'left'; ctx.fillText('!', x + w / 2 - 1, y - h / 2 + s * 0.4);
+      }
+      if (u.entrench >= 3 && s > 12) {
+        ctx.strokeStyle = '#9aa7b2'; ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(x - w / 2, y + h / 2 + 0.5); ctx.lineTo(x - w / 2 - 3, y + h / 2 + 0.5);
+        ctx.moveTo(x - w / 2 - 1.5, y - h / 2); ctx.lineTo(x - w / 2 - 1.5, y + h / 2);
+        ctx.stroke();
+      }
+      if (s > 15 && (u.order || u.pending)) {
+        const o = u.order || u.pending;
+        ctx.fillStyle = o.type === 'attack' ? '#ff8a6a' : '#9fd0f0';
+        ctx.beginPath(); ctx.arc(x - w / 2 + 2, y - h / 2 + 2, 2, 0, 7); ctx.fill();
+      }
+    } else {
+      ctx.fillStyle = '#e8c07a'; ctx.font = `bold ${Math.round(s * 0.5)}px "Barlow Condensed", system-ui, sans-serif`;
+      ctx.textAlign = 'center'; ctx.fillText('?', x, y + s * 0.17);
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ── simbologia tipo OTAN, simplificada ────────────────────────────────
+function drawSymbol(ctx, sym, x, y, w, h, col) {
+  ctx.strokeStyle = '#dbe4ec'; ctx.lineWidth = 1.2; ctx.fillStyle = '#dbe4ec';
+  const w2 = w * 0.34, h2 = h * 0.32;
+  ctx.beginPath();
+  switch (sym) {
+    case 'inf': case 'mtn':
+      ctx.moveTo(x - w2, y - h2); ctx.lineTo(x + w2, y + h2);
+      ctx.moveTo(x + w2, y - h2); ctx.lineTo(x - w2, y + h2); ctx.stroke();
+      if (sym === 'mtn') { ctx.beginPath(); ctx.moveTo(x - w2, y + h2); ctx.lineTo(x, y - h2); ctx.lineTo(x + w2, y + h2); ctx.stroke(); }
+      break;
+    case 'arm':
+      ctx.ellipse(x, y, w2, h2 * 0.9, 0, 0, 7); ctx.stroke(); break;
+    case 'mech':
+      ctx.ellipse(x, y, w2, h2 * 0.9, 0, 0, 7); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x - w2, y - h2); ctx.lineTo(x + w2, y + h2);
+      ctx.moveTo(x + w2, y - h2); ctx.lineTo(x - w2, y + h2); ctx.stroke(); break;
+    case 'mtz':
+      ctx.moveTo(x - w2, y - h2); ctx.lineTo(x + w2, y + h2);
+      ctx.moveTo(x + w2, y - h2); ctx.lineTo(x - w2, y + h2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, h2 * 0.45, 0, 7); ctx.stroke(); break;
+    case 'arty':
+      ctx.arc(x, y, h2 * 0.55, 0, 7); ctx.fill(); break;
+    case 'rocket':
+      ctx.arc(x, y, h2 * 0.5, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x, y - h2); ctx.lineTo(x, y + h2); ctx.stroke(); break;
+    case 'recon':
+      ctx.moveTo(x - w2, y + h2); ctx.lineTo(x + w2, y - h2); ctx.stroke(); break;
+    case 'eng':
+      ctx.moveTo(x - w2, y + h2); ctx.lineTo(x - w2, y - h2); ctx.lineTo(x + w2, y - h2);
+      ctx.moveTo(x - w2, y); ctx.lineTo(x + w2 * 0.4, y); ctx.stroke(); break;
+    case 'aa':
+      ctx.moveTo(x - w2, y + h2); ctx.lineTo(x, y - h2); ctx.lineTo(x + w2, y + h2); ctx.stroke(); break;
+    case 'log':
+      ctx.moveTo(x - w2, y); ctx.lineTo(x + w2, y);
+      ctx.moveTo(x, y - h2); ctx.lineTo(x, y + h2); ctx.stroke(); break;
+    case 'para':
+      ctx.arc(x, y - h2 * 0.2, w2 * 0.8, Math.PI, 0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, y - h2 * 0.2); ctx.lineTo(x, y + h2); ctx.stroke(); break;
+    case 'hq':
+      ctx.moveTo(x - w2, y + h2); ctx.lineTo(x - w2, y - h2); ctx.lineTo(x + w2, y - h2);
+      ctx.lineTo(x + w2, y); ctx.lineTo(x - w2, y); ctx.stroke(); break;
+    default:
+      ctx.moveTo(x - w2, y); ctx.lineTo(x + w2, y); ctx.stroke();
+  }
+}
+
+function arrow(ctx, x1, y1, x2, y2, color, lw, head) {
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  const len = Math.hypot(x2 - x1, y2 - y1);
+  if (len < 4) return;
+  const hx = x2 - Math.cos(a) * head * 0.6, hy = y2 - Math.sin(a) * head * 0.6;
+  ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(hx, hy); ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - Math.cos(a - 0.42) * head, y2 - Math.sin(a - 0.42) * head);
+  ctx.lineTo(x2 - Math.cos(a + 0.42) * head, y2 - Math.sin(a + 0.42) * head);
+  ctx.closePath(); ctx.fill();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+function shade(hex, k) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.min(255, ((n >> 16) & 255) * k) | 0;
+  const g = Math.min(255, ((n >> 8) & 255) * k) | 0;
+  const b = Math.min(255, (n & 255) * k) | 0;
+  return `rgb(${r},${g},${b})`;
+}
+function hexA(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+function fmt(n) { return Math.round(n).toLocaleString('es-ES'); }
+
+return { Renderer };
+})();
+
+/* ── ui.js ── */
+__M['ui'] = (function(){
+// Interfaz de mando. Todo parametro que el modelo usa es accesible aqui:
+// postura, esfuerzo, reservas retenidas, prioridad logistica, mision de la
+// artilleria, reglas de enfrentamiento, doctrina del ejercito y reparto de las
+// salidas de aviacion.
+const { POSTURES, DOCTRINES, TEMPLATES } = __M['units'];
+const { SIDES, other, readiness, rawPower, maxMP, inCommand, findPath, projectsZOC } = __M['sim'];
+const { issueOrder, clearOrder, c2Delay } = __M['orders'];
+const { TERRAIN, WEATHER, GROUND } = __M['terrain'];
+const { distance, HEX_KM } = __M['hex'];
+
+const $ = (s) => document.querySelector(s);
+const fmt = (n) => Math.round(n).toLocaleString('es-ES');
+const pct = (n) => Math.round(n) + '%';
+
+class UI {
+  constructor(game) {
+    this.game = game;
+    this.selected = null;
+    this.orderMode = null;        // 'move' | 'attack' | null
+    this.hoverPath = null;
+    this.layers = {
+      control: true, front: true, supply: false, pockets: true, salients: true,
+      pincers: true, advance: true, threat: false, fog: true, grid: false,
+    };
+    this.log = [];
+    this.tab = 'unit';
+    this.bindChrome();
+  }
+
+  bindChrome() {
+    for (const id of Object.keys(this.layers)) {
+      const el = document.getElementById('ly-' + id);
+      if (!el) continue;
+      el.checked = this.layers[id];
+      el.addEventListener('change', () => { this.layers[id] = el.checked; });
+    }
+    document.querySelectorAll('#tabs button').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('#tabs button').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.tabpane').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        this.tab = b.dataset.tab;
+        $('#tab-' + this.tab).classList.add('active');
+        this.refresh();
+      });
+    });
+  }
+
+  select(u) { this.selected = u; this.orderMode = null; this.hoverPath = null; this.refresh(); }
+
+  // ───────────────────────── cabecera ─────────────────────────
+  refreshTop() {
+    const g = this.game;
+    const hh = String(g.time.hour).padStart(2, '0');
+    const noche = g.time.hour >= 20 || g.time.hour < 5;
+    $('#clock').textContent = `D+${g.time.day}  ${hh}:00 ${noche ? '☾' : '☀'}  ·  turno ${g.turn}`;
+    $('#weather').textContent = `${WEATHER[g.weather.type].name} · suelo ${GROUND[g.weather.ground].name.toLowerCase()}`;
+    const sup = g.sides[g.player].airSuperiority;
+    const st = sup > 0.35 ? 'superioridad aérea' : sup < -0.35 ? 'inferioridad aérea' : 'aire disputado';
+    $('#airstate').textContent = `✈ ${st} (${sup >= 0 ? '+' : ''}${(sup * 100).toFixed(0)})`;
+
+    const me = g.sides[g.player], foe = g.sides[other(g.player)];
+    const men = (s) => g.units.filter(u => u.side === s && u.status !== 'destroyed').reduce((a, u) => a + u.personnel, 0);
+    $('#scoreline').innerHTML =
+      `OBJETIVOS <b>${me.vp}</b>–<b>${foe.vp}</b> &nbsp;·&nbsp; efectivos <b>${fmt(men(g.player))}</b> vs <b>${fmt(men(other(g.player)))}</b>` +
+      ` &nbsp;·&nbsp; bajas propias <b>${fmt(me.casualties.total)}</b> (${fmt(me.casualties.pow)} pris.)`;
+  }
+
+  // ───────────────────────── caja de situacion ─────────────────────────
+  refreshOps() {
+    const g = this.game, A = g.analysis, me = g.player, foe = other(me);
+    if (!A) return;
+    const items = [];
+    const goto = (c, r) => `data-goto="${Math.round(c)},${Math.round(r)}"`;
+
+    for (const p of A.sides[me].pockets) items.push(
+      `<div class="ops-item k-pocket" ${goto(...p.centroid)}><b>${p.sealed ? '⊗ FUERZAS PROPIAS CERCADAS' : 'BOLSA PROPIA (corredor abierto)'}</b>
+       ${p.units.length} unidades · ${fmt(p.men)} h · ${p.areaKm2} km² · ${p.turnsIsolated} turnos sin traza</div>`);
+    for (const p of A.sides[foe].pockets) items.push(
+      `<div class="ops-item k-pocket" ${goto(...p.centroid)}><b>${p.sealed ? '⊗ CERCO SOBRE EL ENEMIGO' : 'ENEMIGO SEMIEMBOLSADO'}</b>
+       ${p.units.length} unidades · ${fmt(p.men)} h atrapados · ${p.turnsIsolated} turnos aislado</div>`);
+    for (const p of A.sides[me].pincers) items.push(
+      `<div class="ops-item k-pincer" ${goto(...p.centroid)}><b>⇉ PINZA PROPIA — brecha ${p.gapKm} km</b>
+       Al cerrar: ${fmt(p.trappedMen)} hombres y ${p.trappedUnits.length} unidades enemigas en la bolsa.</div>`);
+    for (const p of A.sides[foe].pincers) if (p.trappedMen > 3000) items.push(
+      `<div class="ops-item k-pincer" ${goto(...p.centroid)}><b>⚠ TENAZA ENEMIGA — brecha ${p.gapKm} km</b>
+       En riesgo: ${fmt(p.trappedMen)} hombres propios.</div>`);
+    for (const s of A.sides[me].salients) if (s.vulnerable) items.push(
+      `<div class="ops-item k-salient" ${goto(...s.centroid)}><b>SALIENTE PROPIO VULNERABLE</b>
+       ${Math.round(s.depthKm)} km de profundidad, cuello de ${Math.round(s.neckKm)} km · ${fmt(s.men)} h expuestos.</div>`);
+    for (const s of A.sides[foe].salients) if (s.vulnerable) items.push(
+      `<div class="ops-item k-salient" ${goto(...s.centroid)}><b>SALIENTE ENEMIGO VULNERABLE</b>
+       ${Math.round(s.depthKm)} km prof · cuello ${Math.round(s.neckKm)} km · ${fmt(s.men)} h cortables.</div>`);
+    for (const b of A.sides[me].breaches) items.push(
+      `<div class="ops-item k-breach" ${goto(...b.centroid)}><b>BRECHA SIN CUBRIR — ${b.widthKm} km</b>
+       Sector de contacto sin tropas propias a menos de 10 km.</div>`);
+
+    const low = g.units.filter(u => u.side === me && u.status !== 'destroyed' && u.supplyLevel < 25);
+    if (low.length) items.push(
+      `<div class="ops-item k-supply"><b>ABASTECIMIENTO CRÍTICO</b>${low.length} unidades por debajo del 25 % de traza. ` +
+      `Punto culminante alcanzado en esos sectores.</div>`);
+
+    $('#opsbox').innerHTML = `<div class="ops-h">SITUACIÓN OPERACIONAL</div>` +
+      (items.length ? items.join('') : `<div class="ops-item">Frente estable. Sin salientes ni bolsas destacables.</div>`);
+    $('#opsbox').querySelectorAll('[data-goto]').forEach(el => {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', () => {
+        const [c, r] = el.dataset.goto.split(',').map(Number);
+        this.onGoto && this.onGoto(c, r);
+      });
+    });
+  }
+
+  // ───────────────────────── panel de unidad ─────────────────────────
+  refreshUnit() {
+    const el = $('#tab-unit'), g = this.game, u = this.selected;
+    if (!u || u.status === 'destroyed') {
+      el.innerHTML = `<div class="sec"><h4>SIN UNIDAD SELECCIONADA</h4><div class="note">
+        Haz clic sobre una ficha para asumir su mando. Clic derecho sobre el mapa para darle una orden:
+        si el hexágono está ocupado por el enemigo y es contiguo, la orden será de ataque; en caso contrario, de marcha.
+      </div></div>`;
+      return;
+    }
+    const own = u.side === g.player;
+    const h = g.hexes[u.row * g.W + u.col];
+    const T = TERRAIN[h.t];
+    const hq = u.hqId ? g.byId[u.hqId] : null;
+    const rd = readiness(u);
+    const eqTot = ['tanks', 'ifv', 'apc', 'guns', 'mlrs', 'atgm', 'aa'];
+    const det = u.side === g.player ? 100 : (u.detectedBy?.[g.player] ?? 0);
+
+    const bar = (label, v, max, color, extra = '') =>
+      `<div class="bl"><span>${label}</span><span>${extra || Math.round(v) + (max === 100 ? '%' : '')}</span></div>
+       <div class="bar"><i style="width:${Math.max(0, Math.min(100, v / max * 100))}%;background:${color}"></i></div>`;
+
+    const tags = [];
+    if (u.status === 'routed') tags.push('<span class="tag bad">DESBANDADA</span>');
+    if (u.supplyLevel < 3) tags.push('<span class="tag bad">CERCADA · SIN TRAZA</span>');
+    else if (u.supplyLevel < 25) tags.push('<span class="tag warn">TRAZA PRECARIA</span>');
+    if (!inCommand(u, g)) tags.push('<span class="tag warn">FUERA DEL RADIO DE MANDO</span>');
+    if (u.entrench >= 3) tags.push('<span class="tag good">POSICIÓN PREPARADA</span>');
+    if (u.suppression > 45) tags.push('<span class="tag bad">BATIDA POR EL FUEGO</span>');
+    if (u.fatigue > 65) tags.push('<span class="tag warn">TROPA EXHAUSTA</span>');
+    if (u.isolatedTurns > 0) tags.push(`<span class="tag bad">AISLADA ${u.isolatedTurns} TURNOS</span>`);
+
+    let html = `
+    <div class="unit-head">
+      <div>
+        <div class="unit-name">${u.name}</div>
+        <div class="unit-sub">${u.tpl.name} · ${hq ? hq.name : 'mando directo'} · ${h.city ? h.city.name : T.name}</div>
+      </div>
+    </div>
+    <div>${tags.join('')}</div>`;
+
+    if (!own) {
+      html += `<div class="sec"><h4>APRECIACIÓN DE INTELIGENCIA</h4><div>
+        ${bar('Grado de identificación', det, 100, '#c8a24a')}
+        <div class="row"><span class="k">Efectivos estimados</span><span class="v">${det > 60 ? fmt(u.personnel) : '≈ ' + fmt(Math.round(u.personnel / 1000) * 1000)}</span></div>
+        <div class="row"><span class="k">Última observación</span><span class="v">turno ${u.lastSeenTurn < 0 ? '—' : u.lastSeenTurn}</span></div>
+        <div class="row"><span class="k">Postura aparente</span><span class="v">${det > 55 ? POSTURES[u.posture].name : 'desconocida'}</span></div>
+        ${det > 70 ? `<div class="row"><span class="k">Moral estimada</span><span class="v">${pct(u.morale)}</span></div>` : ''}
+      </div></div>`;
+      el.innerHTML = html;
+      return;
+    }
+
+    html += `
+    <div class="sec"><h4>ESTADO DE LA FUERZA</h4><div>
+      ${bar('Efectivos', u.personnel, u.personnelMax, '#7fc98a', `${fmt(u.personnel)} / ${fmt(u.personnelMax)}`)}
+      ${bar('Moral', u.morale, 100, '#d8c46a')}
+      ${bar('Cohesión', u.cohesion, 100, '#b08fd0')}
+      ${bar('Fatiga', u.fatigue, 100, '#d08a5a')}
+      ${bar('Supresión', u.suppression, 100, '#c06a6a')}
+      ${bar('Atrincheramiento', u.entrench, 6, '#8fa8b8', `nivel ${u.entrench.toFixed(1)} / ${T.entrenchMax}`)}
+      <div class="row"><span class="k">Experiencia</span><span class="v">${pct(u.experience)}</span></div>
+      <div class="row"><span class="k">Índice de eficacia</span><span class="v">${(rd * 100).toFixed(0)} / 100</span></div>
+      <div class="row"><span class="k">Bajas acumuladas</span><span class="v">${fmt(u.casualtiesTotal)}</span></div>
+    </div></div>
+
+    <div class="sec"><h4>SOSTENIMIENTO</h4><div>
+      ${bar('Traza logística', u.supplyLevel, 100, '#5fc0da')}
+      ${bar('Munición', u.ammo, 100, '#d0a050')}
+      ${bar('Combustible', u.fuel, 100, '#a0c060')}
+      ${bar('Víveres y repuestos', u.stores, 100, '#90a0b0')}
+      <div class="row"><span class="k">Prioridad de reabastecimiento</span><span class="v" id="lp-lbl">${['baja', 'normal', 'prioritaria'][u.logPriority]}</span></div>
+      <div class="opts" id="opt-logprio">
+        ${[0, 1, 2].map(i => `<button data-v="${i}" class="${u.logPriority === i ? 'on' : ''}">${['Baja', 'Normal', 'Prioritaria'][i]}</button>`).join('')}
+      </div>
+      <div class="note">La traza se calcula desde las bases de teatro por la red de comunicaciones. Las zonas de control enemigas la cortan; por debajo del 3 % la unidad consume reservas propias y empieza a desangrarse.</div>
+    </div></div>
+
+    <div class="sec"><h4>MATERIAL</h4><div class="grid2">
+      ${eqTot.filter(k => u.equipMax[k] > 0).map(k => `
+        <div class="row"><span class="k">${{ tanks: 'Carros', ifv: 'VCI', apc: 'TOA', guns: 'Piezas', mlrs: 'Lanzacohetes', atgm: 'Misiles c/c', aa: 'Antiaéreos' }[k]}</span>
+        <span class="v">${u.equip[k]}/${u.equipMax[k]}</span></div>`).join('')}
+    </div></div>
+
+    <div class="sec"><h4>POSTURA TÁCTICA</h4><div>
+      <div class="opts" id="opt-posture">
+        ${Object.entries(POSTURES).map(([k, p]) => `<button data-v="${k}" class="${u.posture === k ? 'on' : ''}" title="${p.name}">${p.name}</button>`).join('')}
+      </div>
+      <div class="note">${POSTURES[u.posture].name}: ataque ×${POSTURES[u.posture].atk.toFixed(2)}, defensa ×${POSTURES[u.posture].def.toFixed(2)},
+      bajas ×${POSTURES[u.posture].cas.toFixed(2)}, consumo de munición ×${POSTURES[u.posture].ammo.toFixed(1)}, movilidad ×${POSTURES[u.posture].move.toFixed(2)}.</div>
+    </div></div>
+
+    <div class="sec"><h4>ESFUERZO Y ESCALONAMIENTO</h4><div>
+      <div class="bl"><span>Intensidad de esfuerzo</span><span>${pct(u.effort * 100)}</span></div>
+      <input type="range" id="sl-effort" min="20" max="100" value="${Math.round(u.effort * 100)}">
+      <div class="note">Gobierna consumo de munición y ritmo de bajas propias y ajenas. Un esfuerzo máximo sostenido agota a la unidad en pocos turnos.</div>
+      <div class="bl" style="margin-top:8px"><span>Fuerza retenida en reserva</span><span>${pct(u.reservePct * 100)}</span></div>
+      <input type="range" id="sl-reserve" min="0" max="50" value="${Math.round(u.reservePct * 100)}">
+      <div class="note">Reduce la potencia aplicada pero conserva un escalón para relevar, contraatacar o cubrir la retirada.</div>
+    </div></div>`;
+
+    if (u.tpl.indRange >= 2 && (u.equipMax.guns + u.equipMax.mlrs) > 8) {
+      html += `<div class="sec"><h4>MISIÓN DE FUEGOS · alcance ${u.tpl.indRange * HEX_KM} km</h4><div>
+        <div class="opts" id="opt-arty">
+          ${[['apoyo', 'Apoyo directo'], ['preparacion', 'Preparación'], ['contrabateria', 'Contrabatería'], ['interdiccion', 'Interdicción']]
+          .map(([k, n]) => `<button data-v="${k}" class="${u.artyMission === k ? 'on' : ''}">${n}</button>`).join('')}
+        </div>
+        <div class="note">${{
+          apoyo: 'Refuerza los combates propios en alcance, atacando y defendiendo.',
+          preparacion: 'Machaca la posición asaltada antes del ataque: supresión masiva y desgaste del atrincheramiento. Consumo muy alto.',
+          contrabateria: 'Bate la artillería enemiga y reduce su eficacia en todo el sector.',
+          interdiccion: 'Bate retaguardia y columnas en marcha: supresión y desgaste continuo sobre unidades detectadas.',
+        }[u.artyMission]}</div>
+      </div></div>`;
+    }
+
+    html += `
+    <div class="sec"><h4>REGLAS DE ENFRENTAMIENTO</h4><div>
+      <div class="bl"><span>Romper contacto si las bajas superan</span><span>${u.roeCasualty}%</span></div>
+      <input type="range" id="sl-roec" min="10" max="70" value="${u.roeCasualty}">
+      <div class="bl"><span>Romper contacto si la moral cae por debajo de</span><span>${u.roeMorale}%</span></div>
+      <input type="range" id="sl-roem" min="5" max="60" value="${u.roeMorale}">
+      <div class="opts" style="margin-top:6px">
+        <button id="tg-retreat" class="${u.allowRetreat ? 'on' : 'danger on'}">${u.allowRetreat ? 'Repliegue autorizado' : 'PROHIBIDO CEDER TERRENO'}</button>
+        <button id="tg-digin" class="${u.digIn ? 'on' : ''}">${u.digIn ? 'Fortificar posición' : 'No fortificar'}</button>
+      </div>
+      <div class="note">«Prohibido ceder terreno» impide el repliegue voluntario: conserva la posición al precio de que un asalto exitoso encuentre a la unidad sin margen de maniobra.</div>
+    </div></div>
+
+    <div class="sec"><h4>MANDO Y CONTROL</h4><div>
+      <div class="row"><span class="k">Cuartel general</span><span class="v">${hq ? hq.name : '—'}</span></div>
+      <div class="row"><span class="k">Distancia al CG</span><span class="v">${hq ? distance(u.col, u.row, hq.col, hq.row) * HEX_KM + ' km' : '—'}</span></div>
+      <div class="row"><span class="k">Retardo de transmisión</span><span class="v">${c2Delay(g, u)} turno(s)</span></div>
+      <div class="row"><span class="k">Puntos de movimiento</span><span class="v">${maxMP(u, g).toFixed(1)}</span></div>
+      <div class="row"><span class="k">Orden en vigor</span><span class="v">${orderText(g, u)}</span></div>
+      <div class="opts" style="margin-top:6px">
+        <button id="ord-move">Marchar a…</button>
+        <button id="ord-attack">Atacar…</button>
+        <button id="ord-hold">Mantener</button>
+        <button id="ord-cancel">Anular</button>
+      </div>
+    </div></div>`;
+
+    el.innerHTML = html;
+    this.wireUnit(u);
+  }
+
+  wireUnit(u) {
+    const g = this.game;
+    const on = (sel, ev, fn) => { const e = $(sel); if (e) e.addEventListener(ev, fn); };
+    $('#tab-unit').querySelectorAll('#opt-posture button').forEach(b =>
+      b.addEventListener('click', () => { u.posture = b.dataset.v; this.refresh(); }));
+    $('#tab-unit').querySelectorAll('#opt-arty button').forEach(b =>
+      b.addEventListener('click', () => { u.artyMission = b.dataset.v; this.refresh(); }));
+    $('#tab-unit').querySelectorAll('#opt-logprio button').forEach(b =>
+      b.addEventListener('click', () => { u.logPriority = +b.dataset.v; this.refresh(); }));
+    on('#sl-effort', 'input', e => { u.effort = +e.target.value / 100; this.refreshUnitSoft(); });
+    on('#sl-reserve', 'input', e => { u.reservePct = +e.target.value / 100; this.refreshUnitSoft(); });
+    on('#sl-roec', 'input', e => { u.roeCasualty = +e.target.value; this.refreshUnitSoft(); });
+    on('#sl-roem', 'input', e => { u.roeMorale = +e.target.value; this.refreshUnitSoft(); });
+    on('#tg-retreat', 'click', () => { u.allowRetreat = !u.allowRetreat; this.refresh(); });
+    on('#tg-digin', 'click', () => { u.digIn = !u.digIn; this.refresh(); });
+    on('#ord-move', 'click', () => { this.orderMode = 'move'; this.setHint('Selecciona el hexágono de destino'); });
+    on('#ord-attack', 'click', () => { this.orderMode = 'attack'; this.setHint('Selecciona el hexágono enemigo contiguo a batir'); });
+    on('#ord-hold', 'click', () => { clearOrder(u); u.posture = u.posture === 'reserva' ? 'defensa' : u.posture; this.refresh(); });
+    on('#ord-cancel', 'click', () => { clearOrder(u); this.refresh(); });
+  }
+  refreshUnitSoft() {
+    // refresco ligero de las etiquetas de los deslizadores sin reconstruir el panel
+    const u = this.selected; if (!u) return;
+    const set = (sel, txt) => { const e = $(sel); if (e) e.previousElementSibling && (e.previousElementSibling.lastElementChild.textContent = txt); };
+    set('#sl-effort', pct(u.effort * 100));
+    set('#sl-reserve', pct(u.reservePct * 100));
+    set('#sl-roec', u.roeCasualty + '%');
+    set('#sl-roem', u.roeMorale + '%');
+  }
+
+  // ───────────────────────── panel de ejercito ─────────────────────────
+  refreshArmy() {
+    const g = this.game, S = g.sides[g.player];
+    const mine = g.units.filter(u => u.side === g.player && u.status !== 'destroyed');
+    const tot = (k) => mine.reduce((a, u) => a + (u.equip[k] || 0), 0);
+    const air = S.air.alloc;
+
+    let html = `
+    <div class="sec"><h4>DOCTRINA DEL EJÉRCITO</h4><div>
+      <select id="sel-doctrine">
+        ${Object.entries(DOCTRINES).map(([k, d]) => `<option value="${k}" ${S.doctrine === k ? 'selected' : ''}>${d.name}</option>`).join('')}
+      </select>
+      <div class="note">${DOCTRINES[S.doctrine].desc}<br>
+      Explotación ×${DOCTRINES[S.doctrine].exploit.toFixed(2)} · preparación artillera ×${DOCTRINES[S.doctrine].artyPrep.toFixed(2)} ·
+      bonificación defensiva ×${DOCTRINES[S.doctrine].defBonus.toFixed(2)} · velocidad de transmisión ×${DOCTRINES[S.doctrine].c2.toFixed(2)}.</div>
+    </div></div>
+
+    <div class="sec"><h4>EMPLEO DE LA AVIACIÓN · ${Math.round(S.air.sorties)} salidas/turno</h4><div>
+      ${['cap', 'cas', 'interdiction', 'recon'].map(k => `
+        <div class="bl"><span>${{ cap: 'Superioridad aérea', cas: 'Apoyo aéreo cercano', interdiction: 'Interdicción', recon: 'Reconocimiento' }[k]}</span><span>${air[k]}%</span></div>
+        <input type="range" class="air" data-k="${k}" min="0" max="100" value="${air[k]}">`).join('')}
+      <div class="note">Los porcentajes se normalizan a 100. La interdicción degrada la traza logística enemiga: es la herramienta para asfixiar una bolsa sin asaltarla.</div>
+    </div></div>
+
+    <div class="sec"><h4>SOSTENIMIENTO DE TEATRO</h4><div>
+      <div class="row"><span class="k">Alcance operacional</span><span class="v">${S.logRange.toFixed(0)} pts (~${Math.round(S.logRange * 5)} km por carretera)</span></div>
+      <div class="row"><span class="k">Depósito de teatro</span><span class="v">${Math.round(S.stockpile)} / ${S.stockpileMax}</span></div>
+      <div class="row"><span class="k">Producción por turno</span><span class="v">+${S.production}</span></div>
+      <div class="row"><span class="k">Demanda del despliegue</span><span class="v">${Math.round(S.demand)}</span></div>
+      <div class="row"><span class="k">Reemplazos disponibles</span><span class="v">${fmt(S.replacements)}</span></div>
+      <div class="row"><span class="k">Interdicción sufrida</span><span class="v">${(S.interdictedBy * 100).toFixed(0)}%</span></div>
+      <div class="bl" style="margin-top:6px"><span>Esfuerzo de transporte hacia vanguardia</span><span>${S.transportPush}%</span></div>
+      <input type="range" id="sl-transport" min="0" max="100" value="${S.transportPush}">
+      <div class="note">Empujar el transporte hacia vanguardia amplía el alcance operacional pero quema depósito. Si la demanda supera el depósito, todas las unidades reciben menos de lo pedido.</div>
+    </div></div>
+
+    <div class="sec"><h4>BALANCE DE FUERZAS</h4><div class="grid2">
+      <div class="row"><span class="k">Unidades</span><span class="v">${mine.length}</span></div>
+      <div class="row"><span class="k">Efectivos</span><span class="v">${fmt(mine.reduce((a, u) => a + u.personnel, 0))}</span></div>
+      <div class="row"><span class="k">Carros</span><span class="v">${tot('tanks')}</span></div>
+      <div class="row"><span class="k">VCI/TOA</span><span class="v">${tot('ifv') + tot('apc')}</span></div>
+      <div class="row"><span class="k">Piezas</span><span class="v">${tot('guns')}</span></div>
+      <div class="row"><span class="k">Lanzacohetes</span><span class="v">${tot('mlrs')}</span></div>
+      <div class="row"><span class="k">Bajas</span><span class="v">${fmt(S.casualties.total)}</span></div>
+      <div class="row"><span class="k">Prisioneros</span><span class="v">${fmt(S.casualties.pow)}</span></div>
+    </div></div>
+
+    <div class="sec"><h4>ÓRDENES GENERALES</h4><div>
+      <div class="opts">
+        <button id="gen-digin">Fortificar todo el frente</button>
+        <button id="gen-hold">Cancelar todas las órdenes</button>
+        <button id="gen-effort-lo">Esfuerzo mínimo</button>
+        <button id="gen-effort-hi">Esfuerzo máximo</button>
+      </div>
+      <div class="note">Atajos de estado mayor: aplican a todas las unidades propias en el frente.</div>
+    </div></div>
+
+    <div class="sec"><h4>ORDEN DE BATALLA</h4><div id="oob"></div></div>`;
+
+    $('#tab-army').innerHTML = html;
+
+    $('#sel-doctrine').addEventListener('change', e => { S.doctrine = e.target.value; this.refresh(); });
+    $('#tab-army').querySelectorAll('input.air').forEach(sl => {
+      sl.addEventListener('change', () => {
+        S.air.alloc[sl.dataset.k] = +sl.value;
+        const t = Object.values(S.air.alloc).reduce((a, b) => a + b, 0) || 1;
+        for (const k of Object.keys(S.air.alloc)) S.air.alloc[k] = Math.round(S.air.alloc[k] / t * 100);
+        this.refresh();
+      });
+    });
+    $('#sl-transport').addEventListener('change', e => {
+      S.transportPush = +e.target.value;
+      S.logRange = S.logRangeBase * (0.75 + S.transportPush / 100 * 0.7);
+      this.refresh();
+    });
+    const all = g.units.filter(u => u.side === g.player && u.status !== 'destroyed');
+    $('#gen-digin').addEventListener('click', () => { all.forEach(u => { if (projectsZOC(u)) { u.digIn = true; u.posture = 'fortificada'; } }); this.refresh(); });
+    $('#gen-hold').addEventListener('click', () => { all.forEach(u => clearOrder(u)); this.refresh(); });
+    $('#gen-effort-lo').addEventListener('click', () => { all.forEach(u => u.effort = 0.4); this.refresh(); });
+    $('#gen-effort-hi').addEventListener('click', () => { all.forEach(u => u.effort = 1.0); this.refresh(); });
+
+    this.renderOOB();
+  }
+
+  renderOOB() {
+    const g = this.game, box = $('#oob');
+    if (!box) return;
+    const mine = g.units.filter(u => u.side === g.player && u.status !== 'destroyed');
+    const hqs = mine.filter(u => u.tpl.cmdRadius > 0);
+    let html = '';
+    for (const hq of hqs) {
+      const subs = mine.filter(u => u.hqId === hq.id);
+      if (!subs.length && hq.tpl.cmdRadius < 15) continue;
+      const men = subs.reduce((a, u) => a + u.personnel, 0);
+      html += `<div class="oob-corps"><div class="h" data-u="${hq.id}"><span>${hq.name}</span><span>${fmt(men)} h</span></div>`;
+      for (const u of subs.sort((a, b) => a.name.localeCompare(b.name))) {
+        const c = u.supplyLevel < 3 ? '#d4453a' : u.morale < 35 ? '#d39a3a' : '#5aa469';
+        html += `<div class="oob-u ${this.selected === u ? 'sel' : ''}" data-u="${u.id}">
+          <span class="dot" style="background:${c}"></span>
+          <span class="nm">${u.name}</span>
+          <span class="st">${Math.round(u.personnel / u.personnelMax * 100)}%·M${Math.round(u.morale)}·S${Math.round(u.supplyLevel)}</span>
+        </div>`;
+      }
+      html += '</div>';
+    }
+    box.innerHTML = html;
+    box.querySelectorAll('[data-u]').forEach(el => el.addEventListener('click', () => {
+      const u = g.byId[+el.dataset.u];
+      if (u) { this.select(u); this.onGoto && this.onGoto(u.col, u.row); }
+    }));
+  }
+
+  // ───────────────────────── inteligencia ─────────────────────────
+  refreshIntel() {
+    const g = this.game, A = g.analysis, me = g.player, foe = other(me);
+    if (!A) { $('#tab-intel').innerHTML = ''; return; }
+    const seen = g.units.filter(u => u.side === foe && u.status !== 'destroyed' && (u.detectedBy?.[me] ?? 0) > 25);
+    const conf = g.units.filter(u => u.side === foe && u.status !== 'destroyed' && (u.detectedBy?.[me] ?? 0) > 65);
+    const estMen = seen.reduce((a, u) => a + u.personnel, 0);
+    const myMen = g.units.filter(u => u.side === me && u.status !== 'destroyed').reduce((a, u) => a + u.personnel, 0);
+    const myPow = g.units.filter(u => u.side === me && u.status !== 'destroyed').reduce((a, u) => a + rawPower(u) * readiness(u), 0);
+    const foePow = seen.reduce((a, u) => a + rawPower(u) * readiness(u), 0);
+
+    const sec = (t, body) => `<div class="sec"><h4>${t}</h4><div>${body}</div></div>`;
+    const listShapes = (arr, f) => arr.length ? arr.map(f).join('') : '<div class="note">Nada que señalar.</div>';
+
+    $('#tab-intel').innerHTML =
+      sec('APRECIACIÓN GENERAL', `
+        <div class="row"><span class="k">Frente de contacto</span><span class="v">${A.sides[me].frontKm} km</span></div>
+        <div class="row"><span class="k">Territorio controlado</span><span class="v">${fmt(A.sides[me].areaKm2)} km²</span></div>
+        <div class="row"><span class="k">Territorio enemigo</span><span class="v">${fmt(A.sides[foe].areaKm2)} km²</span></div>
+        <div class="row"><span class="k">Unidades enemigas detectadas</span><span class="v">${seen.length} (${conf.length} identificadas)</span></div>
+        <div class="row"><span class="k">Efectivos enemigos estimados</span><span class="v">≈ ${fmt(estMen)}</span></div>
+        <div class="row"><span class="k">Relación de fuerzas apreciada</span><span class="v">${(myPow / Math.max(1, foePow)).toFixed(2)} : 1</span></div>
+        <div class="note">La relación se calcula solo sobre lo detectado. Un enemigo no observado no aparece en el cómputo: la sorpresa operacional vive de ese hueco.</div>`) +
+
+      sec('BOLSAS Y CERCOS', listShapes([...A.sides[me].pockets.map(p => ({ ...p, own: true })), ...A.sides[foe].pockets.map(p => ({ ...p, own: false }))],
+        p => `<div class="ops-item k-pocket" data-goto="${Math.round(p.centroid[0])},${Math.round(p.centroid[1])}">
+          <b>${p.own ? 'PROPIA' : 'ENEMIGA'} — ${p.sealed ? 'sellada' : 'con corredor'}</b>
+          ${p.units.length} unidades · ${fmt(p.men)} h · ${p.areaKm2} km² · traza media ${Math.round(p.avgSupply)}%</div>`)) +
+
+      sec('SALIENTES', listShapes([...A.sides[me].salients.map(s => ({ ...s, own: true })), ...A.sides[foe].salients.map(s => ({ ...s, own: false }))],
+        s => `<div class="ops-item k-salient" data-goto="${Math.round(s.centroid[0])},${Math.round(s.centroid[1])}">
+          <b>${s.own ? 'PROPIO' : 'ENEMIGO'} · ${Math.round(s.depthKm)} km de profundidad</b>
+          Cuello de ${Math.round(s.neckKm)} km · ${fmt(s.men)} h dentro ${s.vulnerable ? '· <span style="color:#e0a83a">cortable por la base</span>' : ''}</div>`)) +
+
+      sec('MANIOBRAS ENVOLVENTES', listShapes([...A.sides[me].pincers.map(p => ({ ...p, own: true })), ...A.sides[foe].pincers.map(p => ({ ...p, own: false }))],
+        p => `<div class="ops-item k-pincer" data-goto="${Math.round(p.centroid[0])},${Math.round(p.centroid[1])}">
+          <b>${p.own ? 'PINZA PROPIA' : 'TENAZA ENEMIGA'} · brecha ${p.gapKm} km</b>
+          Al cerrarse quedarían embolsados ${fmt(p.trappedMen)} hombres y ${p.trappedUnits.length} unidades.</div>`)) +
+
+      sec('BRECHAS EN EL DISPOSITIVO PROPIO', listShapes(A.sides[me].breaches,
+        b => `<div class="ops-item k-breach" data-goto="${Math.round(b.centroid[0])},${Math.round(b.centroid[1])}">
+          <b>${b.widthKm} km sin cubrir</b>Sector de contacto sin unidades propias en 10 km.</div>`));
+
+    $('#tab-intel').querySelectorAll('[data-goto]').forEach(el => {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', () => {
+        const [c, r] = el.dataset.goto.split(',').map(Number);
+        this.onGoto && this.onGoto(c, r);
+      });
+    });
+  }
+
+  // ───────────────────────── diario ─────────────────────────
+  pushLog(entries) {
+    for (const e of entries) {
+      if (e.quiet && e.side === this.game.player) continue;
+      this.log.unshift({ turn: this.game.turn, ...e });
+    }
+    if (this.log.length > 400) this.log.length = 400;
+  }
+  refreshLog() {
+    const g = this.game;
+    $('#tab-log').innerHTML = `<div id="logfeed">` + this.log.slice(0, 200).map(e => {
+      const cls = e.big ? 'big' : e.t === 'combat' ? (e.side === g.player ? 'blue' : 'red') : '';
+      return `<div class="e ${cls}"><span class="t">T${e.turn}</span>${e.txt}</div>`;
+    }).join('') + `</div>`;
+  }
+
+  setHint(t) { $('#orderstate').textContent = t || ''; }
+
+  refresh() {
+    this.refreshTop();
+    this.refreshOps();
+    if (this.tab === 'unit') this.refreshUnit();
+    if (this.tab === 'army') this.refreshArmy();
+    if (this.tab === 'intel') this.refreshIntel();
+    if (this.tab === 'log') this.refreshLog();
+    this.setHint(this.orderMode === 'move' ? 'Orden de marcha: elige destino'
+      : this.orderMode === 'attack' ? 'Orden de ataque: elige objetivo contiguo' : '');
+  }
+}
+
+function orderText(g, u) {
+  const o = u.order || u.pending;
+  if (!o) return 'ninguna';
+  const t = o.type === 'attack' ? 'atacar' : o.type === 'move' ? 'marchar a' : o.type;
+  const dest = g.hexes[o.row * g.W + o.col];
+  const nm = dest.city ? dest.city.name : `${o.col},${o.row}`;
+  return `${t} ${nm}${u.pending ? ` (en tránsito, +${o.activeTurn - g.turn}T)` : ''}`;
+}
+
+return { UI };
+})();
+
+/* ── main.js ── */
+(function(){
+// Arranque del simulador: estado global, entrada del usuario y bucle de dibujo.
+const { createGame, MAP_W: W, MAP_H: H } = __M['scenario'];
+const { POSTURES, DOCTRINES } = __M['units'];
+const { SIDES, other, runTurn, findPath, projectsZOC } = __M['sim'];
+const { analyze } = __M['analysis'];
+const { aiTurn } = __M['ai'];
+const { Renderer } = __M['render'];
+const { UI } = __M['ui'];
+const { issueOrder, clearOrder } = __M['orders'];
+const { distance, HEX_KM } = __M['hex'];
+const { TERRAIN, WEATHER, GROUND } = __M['terrain'];
+
+// ─────────────────────────────── arranque ───────────────────────────────
+const seed = (Number(new URLSearchParams(location.search).get('seed')) || Math.floor(Math.random() * 1e9)) >>> 0;
+const game = createGame(seed);
+const ui = new UI(game);
+const rnd = new Renderer(document.getElementById('map'), game, ui);
+rnd.fitTheater();
+ui.onGoto = (c, r) => rnd.centerOn(c, r);
+
+// ─────────────────────────────── entrada ───────────────────────────────
+const cv = document.getElementById('map');
+const tip = document.getElementById('tooltip');
+let drag = null, moved = 0;
+
+cv.addEventListener('contextmenu', e => e.preventDefault());
+cv.addEventListener('mousedown', e => {
+  const r = cv.getBoundingClientRect();
+  const sx = e.clientX - r.left, sy = e.clientY - r.top;
+  if (e.button === 0) { drag = { sx, sy, cx: rnd.cam.x, cy: rnd.cam.y }; moved = 0; }
+  if (e.button === 2) { rightClick(sx, sy); }
+});
+window.addEventListener('mouseup', e => {
+  if (drag && moved < 5 && e.button === 0) {
+    const r = cv.getBoundingClientRect();
+    leftClick(e.clientX - r.left, e.clientY - r.top);
+  }
+  drag = null;
+});
+window.addEventListener('mousemove', e => {
+  const r = cv.getBoundingClientRect();
+  const sx = e.clientX - r.left, sy = e.clientY - r.top;
+  if (drag) {
+    moved = Math.max(moved, Math.hypot(sx - drag.sx, sy - drag.sy));
+    if (moved > 4) { rnd.cam.x = drag.cx - (sx - drag.sx); rnd.cam.y = drag.cy - (sy - drag.sy); }
+    tip.style.display = 'none';
+    return;
+  }
+  if (sx < 0 || sy < 0 || sx > r.width || sy > r.height) { tip.style.display = 'none'; return; }
+  hover(sx, sy, e.clientX, e.clientY);
+});
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = cv.getBoundingClientRect();
+  rnd.zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.12 : 1 / 1.12);
+}, { passive: false });
+
+function hexAt(sx, sy) {
+  const [c, r] = rnd.screenToHex(sx, sy);
+  if (c < 0 || r < 0 || c >= game.W || r >= game.H) return null;
+  return game.hexes[r * game.W + c];
+}
+
+function leftClick(sx, sy) {
+  const h = hexAt(sx, sy); if (!h) return;
+  if (ui.orderMode && ui.selected && ui.selected.side === game.player) {
+    giveOrder(ui.selected, h, ui.orderMode);
+    ui.orderMode = null; ui.refresh(); return;
+  }
+  const stack = game._occ.list[h.i] || [];
+  const vis = stack.filter(u => rnd.unitVisibility(u) > 0);
+  if (vis.length) {
+    const i = vis.indexOf(ui.selected);
+    ui.select(vis[(i + 1) % vis.length]);
+  } else ui.select(null);
+}
+
+function rightClick(sx, sy) {
+  const h = hexAt(sx, sy); if (!h) return;
+  const u = ui.selected;
+  if (!u || u.side !== game.player || u.status === 'destroyed') return;
+  const stack = game._occ.list[h.i] || [];
+  const enemy = stack.length && stack[0].side !== u.side;
+  giveOrder(u, h, enemy && distance(u.col, u.row, h.col, h.row) === 1 ? 'attack' : 'move');
+  ui.refresh();
+}
+
+function giveOrder(u, h, type) {
+  if (type === 'attack' && distance(u.col, u.row, h.col, h.row) !== 1) type = 'move';
+  const d = issueOrder(game, u, { type, col: h.col, row: h.row });
+  if (type === 'attack' && !['asalto', 'ataque', 'sondeo'].includes(u.posture)) u.posture = 'ataque';
+  ui.setHint(d > 0 ? `Orden cursada — llegará a la unidad en ${d} turno(s)` : 'Orden en vigor');
+}
+
+function hover(sx, sy, cx, cy) {
+  const h = hexAt(sx, sy);
+  if (!h) { tip.style.display = 'none'; ui.hoverPath = null; return; }
+  const T = TERRAIN[h.t];
+  const A = game.analysis;
+  const owner = A ? SIDES[A.owner[h.i]] : '—';
+  const sup = Math.round(game._supply[game.player].level[h.i]);
+  const stack = (game._occ.list[h.i] || []).filter(u => rnd.unitVisibility(u) > 0);
+  let txt = `${h.city ? h.city.name.toUpperCase() + ' · ' : ''}${T.name}  (${h.col},${h.row})\n`;
+  txt += `Control: ${owner === 'BLUE' ? 'azul' : 'rojo'} · traza propia ${sup}%\n`;
+  txt += `Defensa ×${T.def.toFixed(2)} · frente útil ×${T.atkFront.toFixed(2)} · trinchera máx ${T.entrenchMax}\n`;
+  if (h.road) txt += h.road >= 2 ? 'Calzada principal\n' : 'Camino secundario\n';
+  if (h.rail) txt += 'Ferrocarril\n';
+  if (h.river.some(Boolean)) txt += h.bridge.some(Boolean) ? 'Curso de agua con puente\n' : 'Curso de agua sin paso\n';
+  if (h.vp) txt += `Objetivo operacional: ${h.vp} puntos\n`;
+  for (const u of stack) {
+    const v = rnd.unitVisibility(u);
+    txt += v === 2
+      ? `▸ ${u.name} — ${Math.round(u.personnel / u.personnelMax * 100)}% · moral ${Math.round(u.morale)} · ${POSTURES[u.posture].name}\n`
+      : `▸ contacto sin identificar\n`;
+  }
+  tip.textContent = txt.trim();
+  tip.style.display = 'block';
+  tip.style.left = Math.min(window.innerWidth - 310, cx + 16) + 'px';
+  tip.style.top = (cy + 14) + 'px';
+
+  const u = ui.selected;
+  if (u && u.side === game.player && distance(u.col, u.row, h.col, h.row) > 0) {
+    ui.hoverPath = findPath(game, u, h.col, h.row, game._zoc);
+  } else ui.hoverPath = null;
+}
+
+// ─────────────────────────────── turno ───────────────────────────────
+const btn = document.getElementById('btn-endturn');
+btn.addEventListener('click', endTurn);
+window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'Enter') { endTurn(); }
+  if (e.code === 'Space') { e.preventDefault(); cycleIdle(); }
+  if (e.key === 'f') { ui.layers.fog = !ui.layers.fog; document.getElementById('ly-fog').checked = ui.layers.fog; }
+  if (e.key === 'Escape') { ui.orderMode = null; ui.setHint(''); }
+});
+
+function cycleIdle() {
+  const mine = game.units.filter(u => u.side === game.player && u.status !== 'destroyed'
+    && projectsZOC(u) && !u.order && !u.pending);
+  if (!mine.length) { ui.setHint('Todas las unidades tienen orden en vigor'); return; }
+  const i = mine.indexOf(ui.selected);
+  const u = mine[(i + 1) % mine.length];
+  ui.select(u); rnd.centerOn(u.col, u.row);
+}
+
+function endTurn() {
+  if (game.over) return;
+  btn.disabled = true; btn.textContent = 'RESOLVIENDO…';
+  setTimeout(() => {
+    const { events } = runTurn(game, (g, ev) => {
+      for (const s of SIDES) if (g.sides[s].ai) aiTurn(g, ev, s);
+    });
+    analyze(game);
+    ui.pushLog(events);
+    checkEnd();
+    ui.refresh();
+    btn.disabled = false; btn.textContent = 'EJECUTAR TURNO ⏎';
+  }, 10);
+}
+
+function checkEnd() {
+  const men = (s) => game.units.filter(u => u.side === s && u.status !== 'destroyed').reduce((a, u) => a + u.personnel, 0);
+  const start = 380000;
+  for (const s of SIDES) {
+    if (men(s) < start * 0.35) { game.over = { winner: other(s), why: `${game.sides[s].name}: colapso del despliegue (pérdidas superiores al 65 %).` }; }
+  }
+  if (game.turn >= 80 && !game.over) {
+    const b = game.sides.BLUE.vp, r = game.sides.RED.vp;
+    game.over = { winner: b === r ? null : (b > r ? 'BLUE' : 'RED'), why: `Fin del plazo operacional. Objetivos ${b} – ${r}.` };
+  }
+  if (game.over) showModal(
+    game.over.winner === null ? 'TABLAS OPERACIONALES'
+      : `VICTORIA ${game.over.winner === 'BLUE' ? 'AZUL' : 'ROJA'}`,
+    `<p>${game.over.why}</p>
+     <h3>BALANCE</h3>
+     <p>Azules: ${game.sides.BLUE.casualties.total.toLocaleString('es')} bajas
+        (${game.sides.BLUE.casualties.pow.toLocaleString('es')} prisioneros).<br>
+        Rojas: ${game.sides.RED.casualties.total.toLocaleString('es')} bajas
+        (${game.sides.RED.casualties.pow.toLocaleString('es')} prisioneros).</p>
+     <p><button class="primary" data-act="restart">NUEVA CAMPAÑA</button></p>`);
+}
+
+// ─────────────────────────────── modal ───────────────────────────────
+const modal = document.createElement('div');
+modal.id = 'modal';
+modal.innerHTML = '<div class="box"></div>';
+document.body.appendChild(modal);
+modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('on'); });
+function showModal(title, html) {
+  modal.querySelector('.box').innerHTML = `<h2>${title}</h2>${html}`;
+  modal.classList.add('on');
+  // Los manejadores se enlazan aqui y no como atributos en linea: un atributo
+  // onclick depende de que la politica de contenido admita guion en linea.
+  const close = modal.querySelector('[data-act="close"]');
+  if (close) close.addEventListener('click', () => modal.classList.remove('on'));
+  const again = modal.querySelector('[data-act="restart"]');
+  if (again) again.addEventListener('click', () => location.reload());
+}
+
+if (new URLSearchParams(location.search).get('brief') !== '0') showModal('ORDEN DE OPERACIONES N.º 1', `
+  <p><b>Situación.</b> El 4.º Ejército rojo ha establecido una defensa preparada a lo largo de los cursos
+  de agua del teatro. Su dispositivo es denso en el centro y más débil en las alas, y dispone de dos
+  divisiones acorazadas en reserva operativa.</p>
+  <p><b>Misión.</b> El 1.er Ejército azul rompe el frente enemigo, alcanza la profundidad operacional y
+  destruye el grueso del 4.º Ejército mediante envolvimiento. Los núcleos con valor operacional
+  aparecen marcados en el mapa.</p>
+  <h3>CÓMO SE MANDA</h3>
+  <ul>
+    <li><b>Clic</b> sobre una ficha para asumir su mando; <b>clic derecho</b> sobre el mapa para ordenarle marchar (o atacar, si el hexágono enemigo es contiguo).</li>
+    <li>Las órdenes <b>no son instantáneas</b>: viajan por la cadena de mando y tardan turnos según la distancia al cuartel general.</li>
+    <li>Cada unidad se regula por completo: postura, intensidad de esfuerzo, reserva retenida, prioridad logística, misión de fuegos y reglas de enfrentamiento.</li>
+    <li>En la pestaña <b>EJÉRCITO</b> se fija la doctrina, el reparto de salidas de aviación y el esfuerzo de transporte.</li>
+  </ul>
+  <h3>LO QUE DECIDE LA CAMPAÑA</h3>
+  <ul>
+    <li>Nada mata como <b>cortar la traza logística</b>. Una unidad cercada consume sus reservas, pierde el material pesado por falta de combustible y acaba capitulando.</li>
+    <li>Un <b>saliente</b> con el cuello más estrecho que su profundidad es una bolsa esperando a ocurrir. El mapa te avisa de los tuyos y de los del enemigo.</li>
+    <li>Cuando dos salientes propios convergen, el panel calcula qué fuerzas quedarían embolsadas al <b>cerrar la pinza</b>. Ése es el objetivo.</li>
+  </ul>
+  <p style="margin-top:18px"><button class="primary" data-act="close">ASUMIR EL MANDO</button></p>
+`);
+
+// Parametro de depuracion: ?auto=N resuelve N turnos con las dos partes bajo
+// control automatico, util para inspeccionar el mapa con la campaña avanzada.
+const auto = Number(new URLSearchParams(location.search).get('auto') || 0);
+if (auto > 0) {
+  game.sides.BLUE.ai = true; game.sides.BLUE.aggression = 0.85;
+  for (let i = 0; i < auto; i++) {
+    const { events } = runTurn(game, (g, ev) => {
+      for (const s of SIDES) if (g.sides[s].ai) aiTurn(g, ev, s);
+    });
+    analyze(game); ui.pushLog(events);
+  }
+  game.sides.BLUE.ai = false;
+}
+
+// ─────────────────────────────── bucle ───────────────────────────────
+ui.refresh();
+(function loop() { rnd.draw(); requestAnimationFrame(loop); })();
+
+// utilidades de consola para depurar el modelo
+window.THEATRUM = { game, ui, rnd, analyze, runTurn };
+
+})();
+
+</script>

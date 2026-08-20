@@ -189,7 +189,7 @@ export class Renderer {
         const r = s * (0.14 + h.city.size * 0.045);
         ctx.beginPath(); ctx.rect(x - r, y - r, r * 2, r * 2); ctx.fill(); ctx.stroke();
         if (s > 13) {
-          ctx.font = `${Math.round(s * 0.46)}px ui-sans-serif`;
+          ctx.font = `${Math.round(s * 0.46)}px "Barlow Condensed", system-ui, sans-serif`;
           ctx.textAlign = 'center'; ctx.lineWidth = 3;
           ctx.strokeStyle = 'rgba(0,0,0,.8)';
           ctx.strokeText(h.city.name, x, y - r - 3);
@@ -288,7 +288,7 @@ export class Renderer {
         arrow(ctx, wx - this.cam.x, wy - this.cam.y, tx - this.cam.x, ty - this.cam.y,
           o.type === 'attack' ? '#ff7a5c' : '#f2d489', 2, s * 0.55);
         if (sel.pending) {
-          ctx.fillStyle = '#f2d489'; ctx.font = `${Math.round(s * 0.45)}px ui-monospace`;
+          ctx.fillStyle = '#f2d489'; ctx.font = `${Math.round(s * 0.45)}px "IBM Plex Mono", ui-monospace, monospace`;
           ctx.textAlign = 'center';
           ctx.fillText(`+${o.activeTurn - g.turn}T`, tx - this.cam.x, ty - this.cam.y - s * 0.9);
         }
@@ -360,8 +360,8 @@ export class Renderer {
     let x = wx - this.cam.x, y = wy - this.cam.y;
     if (x < -200 || y < -80 || x > this.vw + 200 || y > this.vh + 80) return;
     ctx.textAlign = 'center';
-    const fTitle = `600 ${Math.max(10, Math.round(s * 0.55))}px ui-sans-serif`;
-    const fSub = `${Math.max(9, Math.round(s * 0.42))}px ui-monospace,monospace`;
+    const fTitle = `600 ${Math.max(10, Math.round(s * 0.55))}px "Barlow Condensed", system-ui, sans-serif`;
+    const fSub = `${Math.max(9, Math.round(s * 0.42))}px "IBM Plex Mono", ui-monospace, monospace`;
     ctx.font = fTitle; const wT = ctx.measureText(title).width;
     ctx.font = fSub; const wS = ctx.measureText(sub).width;
     const w = Math.max(wT, wS) + 18;
@@ -504,7 +504,7 @@ export class Renderer {
       drawSymbol(ctx, u.tpl.symbol, x, y, w, h, col);
       // escalon
       if (s > 12) {
-        ctx.fillStyle = '#cfd8e0'; ctx.font = `${Math.round(s * 0.32)}px ui-monospace,monospace`;
+        ctx.fillStyle = '#cfd8e0'; ctx.font = `${Math.round(s * 0.32)}px "IBM Plex Mono", ui-monospace, monospace`;
         ctx.textAlign = 'center';
         const ech = u.tpl.cmdRadius >= 15 ? 'XXXX' : u.tpl.cmdRadius > 0 ? 'XXX'
           : /Brigada|Regimiento/.test(u.tpl.name) ? 'X' : 'XX';
@@ -527,10 +527,10 @@ export class Renderer {
       // indicadores
       if (u.supplyLevel < 3) {
         ctx.fillStyle = `rgba(255,80,60,${0.6 + 0.4 * Math.sin(time * 5)})`;
-        ctx.font = `bold ${Math.round(s * 0.5)}px ui-sans-serif`; ctx.textAlign = 'left';
+        ctx.font = `bold ${Math.round(s * 0.5)}px "Barlow Condensed", system-ui, sans-serif`; ctx.textAlign = 'left';
         ctx.fillText('⊗', x + w / 2 - 1, y - h / 2 + s * 0.42);
       } else if (u.supplyLevel < 25) {
-        ctx.fillStyle = '#e0a040'; ctx.font = `bold ${Math.round(s * 0.42)}px ui-sans-serif`;
+        ctx.fillStyle = '#e0a040'; ctx.font = `bold ${Math.round(s * 0.42)}px "Barlow Condensed", system-ui, sans-serif`;
         ctx.textAlign = 'left'; ctx.fillText('!', x + w / 2 - 1, y - h / 2 + s * 0.4);
       }
       if (u.entrench >= 3 && s > 12) {
@@ -546,7 +546,7 @@ export class Renderer {
         ctx.beginPath(); ctx.arc(x - w / 2 + 2, y - h / 2 + 2, 2, 0, 7); ctx.fill();
       }
     } else {
-      ctx.fillStyle = '#e8c07a'; ctx.font = `bold ${Math.round(s * 0.5)}px ui-sans-serif`;
+      ctx.fillStyle = '#e8c07a'; ctx.font = `bold ${Math.round(s * 0.5)}px "Barlow Condensed", system-ui, sans-serif`;
       ctx.textAlign = 'center'; ctx.fillText('?', x, y + s * 0.17);
     }
     ctx.globalAlpha = 1;
