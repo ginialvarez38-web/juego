@@ -1,11 +1,19 @@
 // Definicion del escenario y construccion del estado inicial de la campaña.
 import { makeRng } from './rng.js';
 import { generateTheater, assignSupplyBases } from './worldgen.js';
+import { Theater } from './geo.js';
+import { HEX_KM } from './hex.js';
 import { buildArmy } from './units.js';
 import { SIDES, occupancy, computeZOC, computeSupply, computeDetection } from './sim.js';
 import { analyze } from './analysis.js';
 
 export const MAP_W = 56, MAP_H = 30;
+
+/** Estacion de partida verosimil para la latitud del teatro. */
+function seasonAt(lat) {
+  const a = Math.abs(lat);
+  return a > 55 ? 'invierno' : a < 23 ? 'seca' : 'otoño';
+}
 
 function newSide(name, color, opts) {
   return {
@@ -22,12 +30,14 @@ function newSide(name, color, opts) {
   };
 }
 
-export function createGame(seed, { W = MAP_W, H = MAP_H } = {}) {
+export function createGame(seed, { W = MAP_W, H = MAP_H, lon = 21.0, lat = 48.6 } = {}) {
   const rng = makeRng(seed);
-  const world = generateTheater(W, H, rng);
+  const theater = new Theater(lon, lat, W, H, HEX_KM);
+  const world = generateTheater(theater, rng);
   const game = {
     seed, W, H, N: W * H, hexes: world.hexes, cities: world.cities, rng,
-    turn: 0, time: { day: 1, hour: 5 }, season: 'otoño',
+    theater, lon, lat,
+    turn: 0, time: { day: 1, hour: 5 }, season: seasonAt(lat),
     weather: { type: 'despejado', ground: 'firme' },
     player: 'BLUE',
     sides: {

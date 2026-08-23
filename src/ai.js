@@ -27,8 +27,22 @@ export function aiTurn(game, events, side) {
   const ratio = myPower / Math.max(1, foePower);
 
   S.plan = S.plan || {};
-  const wantOffense = ratio > 0.95 && S.aggression > 0.35;
-  S.plan.mode = wantOffense ? 'ofensiva' : (ratio < 0.6 ? 'defensiva' : 'contencion');
+  // Punto culminante: si buena parte del despliegue esta por debajo del 25 % de
+  // traza, la ofensiva se detiene y se consolida. Seguir empujando con la
+  // logistica rota es la forma mas rapida de perder un ejercito entero.
+  const sinTraza = mine.filter(u => projectsZOC(u) && u.supplyLevel < 25).length;
+  const culminado = mine.length ? sinTraza / mine.length > 0.28 : false;
+  const wantOffense = ratio > 0.95 && S.aggression > 0.35 && !culminado;
+  S.plan.mode = culminado ? 'contencion'
+    : wantOffense ? 'ofensiva' : (ratio < 0.6 ? 'defensiva' : 'contencion');
+  S.plan.culminado = culminado;
+  if (culminado) {
+    events.push({ t: 'ai', side, quiet: true,
+      txt: `Mando ${side === 'RED' ? 'rojo' : 'azul'}: pausa operacional, la ofensiva ha culminado.` });
+    for (const u of mine) {
+      if (u.supplyLevel < 25 && projectsZOC(u)) { u.posture = 'defensa'; u.effort = 0.5; u.logPriority = 2; }
+    }
+  }
 
   // ── aviacion y logistica ─────────────────────────────────────────────
   if (S.plan.mode === 'ofensiva') S.air.alloc = { cap: 30, cas: 40, interdiction: 20, recon: 10 };
@@ -119,7 +133,7 @@ export function aiTurn(game, events, side) {
     const axes = pickAxes(game, side, A, 2);
     for (const ax of axes) {
       const pool = mine.filter(u => !busy.has(u.id) && projectsZOC(u) && u.tpl.cmdRadius === 0
-        && distance(u.col, u.row, ax.col, ax.row) <= 14 && u.morale > 40 && u.supplyLevel > 20)
+        && distance(u.col, u.row, ax.col, ax.row) <= 14 && u.morale > 40 && u.supplyLevel > 40)
         .sort((a, b) => distance(a.col, a.row, ax.col, ax.row) - distance(b.col, b.row, ax.col, ax.row));
       const echelon1 = pool.filter(u => u.tpl.exploit < 1.25).slice(0, 5);
       const echelon2 = pool.filter(u => u.tpl.exploit >= 1.25).slice(0, 4);
@@ -131,10 +145,14 @@ export function aiTurn(game, events, side) {
         orderAdvance(game, u, ax.col, ax.row, side, covering.has(u.id));
         busy.add(u.id);
       }
+      // El segundo escalon solo se lanza a la profundidad cuando el eje ya esta
+      // en nuestras manos. Mandarlo antes de la ruptura es como se pierden las
+      // divisiones acorazadas: entran en un hueco que no existe y quedan sin traza.
+      const roto = A.owner[ax.i] === sideIdx(side);
       for (const u of echelon2) {
         u.posture = 'avance'; u.effort = 0.85; u.logPriority = 2;
-        const deep = deepObjective(game, side, ax, A.owner);
-        orderAdvance(game, u, deep[0], deep[1], side, covering.has(u.id));
+        const obj = roto ? deepObjective(game, side, ax, A.owner) : [ax.col, ax.row];
+        orderAdvance(game, u, obj[0], obj[1], side, covering.has(u.id));
         busy.add(u.id);
       }
       // artilleria: preparacion sobre el eje
@@ -243,7 +261,7 @@ function pickAxes(game, side, A, n) {
 function deepObjective(game, side, ax, owner) {
   const dir = side === 'BLUE' ? 1 : -1;
   let bestCol = ax.col, bestRow = ax.row, best = -1;
-  for (const [c, r] of disc(ax.col, ax.row, 8)) {
+  for (const [c, r] of disc(ax.col, ax.row, 5)) {
     if (c < 1 || r < 1 || c >= game.W - 1 || r >= game.H - 1) continue;
     if ((c - ax.col) * dir < 2) continue;
     const h = game.hexes[r * game.W + c];

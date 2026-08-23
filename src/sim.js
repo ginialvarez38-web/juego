@@ -229,7 +229,10 @@ export function computeSupply(game, side) {
         const h = game.hexes[j];
         if (h.t === 'agua') continue;
         if (occ[j] >= 0 && occ[j] !== mySide) continue;             // el enemigo corta la ruta
-        if (ez[j] && occ[j] < 0 && fz[j] < 2) continue;             // ZDC enemiga sin cobertura propia
+        // Atravesar la zona de control contraria no es imposible, es caro: los
+        // convoyes pasan de noche y con perdidas. Bloquearlo del todo hacia que
+        // cualquier avance dejase a su propia vanguardia sin traza.
+        const zocPenalty = (ez[j] && fz[j] < 2) ? 5.0 : 0;
         // El coste de la traza es el de la red: el ferrocarril es casi gratis, la
         // carretera barata y el campo a traves caro. De ahi que el alcance
         // operacional siga las lineas de comunicaciones y no un radio.
@@ -240,6 +243,7 @@ export function computeSupply(game, side) {
         const src = game.hexes[cur];
         if (src.river[k] && !src.bridge[k]) c += 3.0;
         if (ez[j]) c += 1.2;                                        // presion sobre la linea de comunicaciones
+        c += zocPenalty;
         c *= interdict;
         const nd = d + c;
         if (nd < cost[j]) { cost[j] = nd; pq.push(nd, j); }

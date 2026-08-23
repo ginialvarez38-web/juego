@@ -1,11 +1,13 @@
 {
   "name": "theatrum-belli",
   "version": "1.0.0",
-  "description": "Simulador operacional de guerra: control total del ejercito, red logistica, cercos, bolsas, salientes y pinzas sobre mapa hexagonal.",
+  "description": "Simulador operacional de guerra sobre la Tierra en 3D: control total del ejercito, red logistica, cercos, bolsas, salientes y pinzas.",
   "type": "module",
   "scripts": {
     "start": "python3 serve.py",
-    "test": "node test/selftest.js"
+    "test": "node test/selftest.js",
+    "build": "node build.js",
+    "geodata": "python3 tools/extract-geo.py"
   },
   "license": "MIT"
 }

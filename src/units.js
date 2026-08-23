@@ -1,3 +1,5 @@
+import { ring } from './hex.js';
+
 // Orden de batalla. Escalon operacional: la ficha es una division o brigada
 // independiente; el turno son 6 horas; el hexagono 5 km. Los efectivos, dotaciones
 // y consumos siguen ordenes de magnitud de una TOE mecanizada contemporanea.
@@ -110,15 +112,30 @@ export function buildArmy(world, side, rng, cfg) {
     '11.ª', '12.ª', '13.ª', '14.ª', '15.ª', '16.ª', '17.ª', '18.ª', '19.ª', '20.ª'];
   let divIdx = 0;
 
-  const free = (col, row) => {
+  const taken = (col, row) => units.some(u => u.col === col && u.row === row);
+  const usable = (col, row, allowHard) => {
     const h = world.hexes[row * W + col];
-    return h && h.t !== 'agua' && h.t !== 'montana' && !units.some(u => u.col === col && u.row === row);
+    if (!h || h.t === 'agua' || taken(col, row)) return false;
+    return allowHard || (h.t !== 'montana' && h.t !== 'hielo');
   };
+  /**
+   * Sobre geografia real un despliegue no cabe donde uno quiere: hay mar,
+   * cordilleras y hielo. Se busca primero cerca del sitio deseado y, si no hay
+   * nada, en anillos crecientes admitiendo terreno duro antes que agua.
+   */
   const place = (colWish, rowWish) => {
-    for (let r = 0; r < 60; r++) {
+    for (let r = 0; r < 40; r++) {
       const c = Math.max(1, Math.min(W - 2, colWish + Math.round(rng.gauss(0, r * 0.25))));
       const rr = Math.max(1, Math.min(H - 2, rowWish + Math.round(rng.gauss(0, 1 + r * 0.25))));
-      if (free(c, rr)) return [c, rr];
+      if (usable(c, rr, false)) return [c, rr];
+    }
+    for (const hard of [false, true]) {
+      for (let rad = 1; rad < Math.max(W, H); rad++) {
+        for (const [c, rr] of ring(colWish, rowWish, rad)) {
+          if (c < 1 || rr < 1 || c >= W - 1 || rr >= H - 1) continue;
+          if (usable(c, rr, hard)) return [c, rr];
+        }
+      }
     }
     return [colWish, rowWish];
   };

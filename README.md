@@ -1,15 +1,22 @@
 # Theatrum Belli
 
-Simulador de guerra a **nivel operacional**: un ejército completo, con su cadena de
-mando, su logística y su aviación, maniobrando sobre un teatro de 280 × 150 km.
+Simulador de guerra a **nivel operacional** que se juega **sobre la Tierra**. Un
+ejército completo —con su cadena de mando, su logística y su aviación— maniobra
+en un teatro de 280 × 150 km recortado de la geografía real del planeta, y todo
+se dibuja proyectado sobre la esfera: alejando la cámara el mismo tablero se
+convierte en el globo terráqueo, y desde ahí puedes abrir un teatro nuevo en
+cualquier punto de tierra firme con un clic.
+
 El mapa no es un tablero decorativo — es el instrumento de trabajo: la línea de
 contacto, los salientes, las bolsas, los cercos y las pinzas a punto de cerrarse
-se calculan a partir del estado real de la simulación y se dibujan sobre el
+se calculan a partir del estado de la simulación y se dibujan curvados sobre el
 terreno turno a turno.
 
 ```
 npm start          # sirve el juego en http://localhost:8080
-npm test           # prueba el modelo sin interfaz (40 turnos, ambos bandos automáticos)
+npm test           # prueba el modelo sin interfaz (ambos bandos automáticos)
+npm run build      # empaqueta todo en dist/theatrum-belli.html, un único archivo
+npm run geodata    # regenera src/geodata.js desde los archivos de Natural Earth
 ```
 
 Los módulos son ES modules: hace falta servirlo por HTTP, no vale abrir el
@@ -168,6 +175,25 @@ munición, y por último capitula.
 > [ADP 3-0 *Operations*](https://irp.fas.org/doddir/army/adp3_0.pdf) ·
 > [Principles of sustainment](https://en.wikipedia.org/wiki/Principles_of_sustainment)
 
+### 7. El terreno real como problema operacional
+
+La razón de jugar sobre la Tierra y no sobre un continente inventado no es
+estética. El terreno es el primer factor del problema operacional: decide por
+dónde se puede atacar, cuánto frente hay que guarnecer, dónde se puede cortar
+una línea de comunicaciones y qué obstáculos exigen una operación aparte para
+cruzarlos. Un generador de mapas produce terreno *plausible*; la Tierra produce
+terreno *con historia*, y esa historia se nota al jugar.
+
+En la Gran Llanura húngara no hay dónde apoyar un flanco y las divisiones
+acorazadas mandan. Cuarenta kilómetros al norte, en los Cárpatos, el mismo
+ejército no cabe por los valles. En Normandía el bocage duplica el coste de cada
+kilómetro y el mar cierra un flanco. En Kursk no hay un solo accidente natural
+que detenga un envolvimiento — que es exactamente por lo que ocurrió allí lo que
+ocurrió. Ninguna de esas situaciones hubo que diseñarlas: salen de los datos.
+
+> Fuente cartográfica: [Natural Earth](https://www.naturalearthdata.com/) 1.4 (dominio público),
+> vía [martynafford/natural-earth-geojson](https://github.com/martynafford/natural-earth-geojson).
+
 ---
 
 ## Parte II — Cómo se traduce todo eso a código
@@ -188,6 +214,56 @@ munición, y por último capitula.
 | Aviación | `sim.js: airPhase` | Reparto de salidas entre superioridad, apoyo cercano, interdicción y reconocimiento. La interdicción **encarece la traza logística enemiga**: se puede asfixiar una bolsa sin asaltarla |
 | Niebla de guerra | `sim.js: computeDetection` | Detección por proximidad, calidad de reconocimiento, cobertura del terreno, meteorología y hora. Lo no detectado no cuenta en la relación de fuerzas |
 | Meteorología y estado del suelo | `terrain.js`, `sim.js: advanceClock` | Cadena de Markov con inercia; el barro es un factor operacional de primer orden |
+
+### La Tierra (`geodata.js`, `world.js`, `raster.js`, `worldgen.js`)
+
+El planeta entero viaja dentro del juego en **703 KB**. `tools/extract-geo.py`
+toma los archivos de Natural Earth y los deja en `src/geodata.js` con una
+codificación compacta: las coordenadas se cuantifican a una centésima de grado,
+se recorren en cadena guardando solo la diferencia con el punto anterior, y cada
+diferencia se escribe en varint de 5 bits sobre un alfabeto de 64 caracteres.
+La línea de costa mundial pasa así de 2,7 MB de JSON a 109 KB de texto.
+
+| Conjunto | Contenido | Tamaño |
+|---|---|---|
+| `LAND_GLOBE` | silueta de los continentes para el globo | 10 KB |
+| `LAND_FINE` | costas de detalle (Natural Earth 50 m) | 109 KB |
+| `LAKES` / `RIVERS` | lagos y cursos de agua (10 m) | 25 + 116 KB |
+| `RELIEF` | regiones físicas reales por clase: cordillera, meseta, llanura, desierto, cuenca, humedal… | 42 KB |
+| `CITIES` | 5.763 núcleos con nombre, población y país | 365 KB |
+| `PEAKS` | 711 cumbres con su cota | 34 KB |
+
+Al abrir un teatro, `worldgen.js` recorta el rectángulo correspondiente y deduce
+de él todo lo que el motor necesita:
+
+- **Mar y costa** rasterizando los polígonos de tierra con la regla par‑impar, de
+  modo que los anillos interiores recortan a los que los contienen y los mares
+  interiores salen bien. El rasterizador es propio (`raster.js`) y no usa el
+  lienzo del navegador a propósito: así el mismo código genera un teatro dentro
+  de la página y en la prueba sin interfaz.
+- **Relieve** a partir de la clase de región física real —una cota base por
+  cordillera, meseta o llanura—, elevada alrededor de las cumbres con cota
+  conocida y detallada por debajo de la resolución del dato con ruido fractal.
+- **Vegetación** por un modelo climático de latitud (convergencia ecuatorial,
+  cinturón desértico hacia los 25°, franja templada húmeda, desecación polar)
+  corregido por la cercanía de cauces reales y del mar. Es esa corrección la que
+  impide que la llanura del Ganges salga desierto por estar en el paralelo del
+  Sáhara.
+- **Cauces** trazados sobre las aristas de la retícula siguiendo la geometría
+  real de los ríos, con puentes donde una calzada los cruza.
+- **Ciudades** con su nombre y su valor operacional según población y capitalidad.
+- **Carreteras y ferrocarril** — lo único inventado — uniendo los núcleos reales
+  por el camino de menor coste sobre el terreno real.
+
+### La cámara esférica (`geo.js`, `render.js`)
+
+Cada hexágono tiene longitud y latitud reales. Todo lo que se dibuja pasa por
+`Camera.project()`, que lleva un punto de la esfera a la pantalla en
+perspectiva, y por `onNearSide()`, que descarta lo que queda tras el horizonte.
+La consecuencia es que no hay dos motores de dibujo: el mismo código que pinta
+un hexágono pinta el frente, el contorno de una bolsa y las flechas de una
+pinza, y todos se curvan con el planeta. Alejando la cámara, la retícula se
+apaga y queda el globo con el teatro señalado sobre la geografía real.
 
 ### El análisis del mapa (`analysis.js`)
 
@@ -242,12 +318,20 @@ El adversario no juega hexágono a hexágono. Cada turno:
 ## Parte III — Cómo se juega
 
 Mandas el **1.er Ejército azul**, tres cuerpos y una reserva de ejército, frente
-al 4.º Ejército rojo en defensa preparada. Cada turno son seis horas.
+al 4.º Ejército rojo en defensa preparada. Cada turno son seis horas. Los dos
+bandos son fuerzas de maniobra abstractas —azul y rojo, como en cualquier
+ejercicio de estado mayor— sobre terreno real: el juego no representa a países
+ni a ejércitos concretos.
 
 - **Clic** sobre una ficha para asumir su mando. **Clic derecho** sobre el mapa
   para ordenarle marchar; si el hexágono es enemigo y contiguo, la orden será de
-  ataque. **Rueda** para acercar, **arrastrar** para desplazar, **espacio** para
-  saltar a la siguiente unidad sin órdenes, **intro** para ejecutar el turno.
+  ataque. **Espacio** salta a la siguiente unidad sin órdenes, **intro** ejecuta
+  el turno.
+- **Arrastrar** desplaza la cámara sobre la superficie, **la rueda** sube y baja,
+  **Mayús + arrastrar** inclina y gira el punto de vista.
+- **G** aleja hasta ver el planeta entero; desde ahí, un clic sobre cualquier
+  tierra firme abre un teatro nuevo allí, generado de su geografía real. **T**
+  devuelve al teatro actual.
 - Las órdenes **tardan en llegar**. El panel te dice cuántos turnos.
 
 De cada unidad se controla: postura táctica (ocho, de asalto deliberado a
@@ -283,23 +367,30 @@ guerra— se activan por separado en el panel de la izquierda.
 ```
 index.html            interfaz
 css/style.css
-src/hex.js            geometría hexagonal, distancias, trazados, A*
+build.js              empaquetado a un único archivo autocontenido
+tools/extract-geo.py  genera src/geodata.js desde Natural Earth
+src/hex.js            topología hexagonal: vecinos, distancias, trazados
+src/geo.js            esfera terrestre, cámara en perspectiva y encaje del teatro
+src/geodata.js        geometría real del planeta, codificada (generado)
+src/raster.js         rasterizador propio de polígonos y polilíneas geográficas
+src/world.js          acceso a la geografía ya decodificada
+src/worldgen.js       recorte del teatro: mar, relieve, clima, cauces, ciudades, carreteras
 src/heap.js           montículo binario para Dijkstra y A*
 src/rng.js            PRNG determinista y ruido fractal
 src/terrain.js        terrenos, meteorología, estado del suelo
-src/worldgen.js       generación del teatro: relieve, ríos, red de comunicaciones, ciudades
 src/units.js          plantillas de unidad, posturas, doctrinas, orden de batalla
 src/orders.js         emisión de órdenes y retardo de la cadena de mando
 src/sim.js            motor: potencia de combate, ZDC, movimiento, logística, combate, moral, turno
 src/analysis.js       control del terreno, frente, bolsas, salientes, pinzas, brechas
 src/ai.js             mando automático operacional
-src/render.js         dibujo del mapa y de todas las capas
+src/render.js         dibujo sobre la esfera y todas las capas
 src/ui.js             paneles de mando
 src/scenario.js       escenario y estado inicial
-src/main.js           arranque, entrada, bucle
+src/main.js           arranque, cámara, entrada, bucle
 test/selftest.js      prueba del modelo sin interfaz
 ```
 
-Parámetros de depuración en la URL: `?seed=N` fija la semilla del teatro,
-`?auto=N` resuelve N turnos con las dos partes automáticas, `?brief=0` omite la
-orden de operaciones inicial.
+Parámetros de depuración en la URL: `?lon=` y `?lat=` abren el teatro en un
+punto concreto, `?seed=N` fija la semilla, `?auto=N` resuelve N turnos con las
+dos partes automáticas, `?alt=` y `?tilt=` colocan la cámara, `?brief=0` omite
+la orden de operaciones inicial.

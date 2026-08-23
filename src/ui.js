@@ -48,6 +48,14 @@ export class UI {
 
   select(u) { this.selected = u; this.orderMode = null; this.hoverPath = null; this.refresh(); }
 
+  /** Cambia de campaña sin volver a enlazar los controles de la interfaz. */
+  setGame(game) {
+    this.game = game;
+    this.selected = null; this.orderMode = null; this.hoverPath = null;
+    this.log = [];
+    this.refresh();
+  }
+
   // ───────────────────────── cabecera ─────────────────────────
   refreshTop() {
     const g = this.game;

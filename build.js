@@ -6,18 +6,21 @@
 // los `export` se recogen en el objeto que la funcion devuelve.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 
-const ORDER = ['heap', 'hex', 'rng', 'terrain', 'units', 'orders',
-  'worldgen', 'sim', 'analysis', 'ai', 'scenario', 'render', 'ui'];
+const ORDER = ['heap', 'hex', 'rng', 'geodata', 'raster', 'geo', 'terrain',
+  'units', 'orders', 'world', 'worldgen', 'sim', 'analysis', 'ai', 'scenario',
+  'render', 'ui'];
 const ENTRY = 'main';
 
 const RE_IMPORT = /^import\s*\{([\s\S]*?)\}\s*from\s*'\.\/([\w.-]+)\.js';?[ \t]*$/gm;
+const RE_IMPORT_NS = /^import\s*\*\s*as\s+(\w+)\s*from\s*'\.\/([\w.-]+)\.js';?[ \t]*$/gm;
 const RE_EXPORT_LIST = /^export\s*\{([^}]*)\};?[ \t]*$/gm;
 const RE_EXPORT_DECL = /^export\s+(?=(?:async\s+)?(?:function|const|let|var|class)\b)/gm;
 
 function transform(name, src, isEntry) {
   const exports = new Set();
 
-  let out = src.replace(RE_IMPORT, (_, names, mod) => {
+  let out = src.replace(RE_IMPORT_NS, (_, ns, mod) => `const ${ns} = __M['${mod}'];`);
+  out = out.replace(RE_IMPORT, (_, names, mod) => {
     const binds = names.split(',').map(s => s.trim()).filter(Boolean)
       .map(s => {
         const m = s.match(/^(\w+)\s+as\s+(\w+)$/);

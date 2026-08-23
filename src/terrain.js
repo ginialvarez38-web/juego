@@ -12,8 +12,17 @@ export const TERRAIN = {
   pantano:   { name: 'Marisma',        move: 2.8, def: 1.15, atkFront: 0.35, entrenchMax: 1, sight: 3, cover: 0.15, color: '#3f5450' },
   urbano:    { name: 'Zona urbana',    move: 1.6, def: 1.85, atkFront: 0.50, entrenchMax: 6, sight: 2, cover: 0.55, color: '#6a6a70' },
   industrial:{ name: 'Complejo industrial', move: 1.7, def: 2.00, atkFront: 0.45, entrenchMax: 6, sight: 2, cover: 0.60, color: '#5c5a5f' },
-  agua:      { name: 'Lago',           move: 99,  def: 1.00, atkFront: 0.00, entrenchMax: 0, sight: 5, cover: 0.00, color: '#26404f' },
+  // biomas que aparecen al jugar sobre el planeta real
+  estepa:    { name: 'Estepa',         move: 1.0, def: 0.95, atkFront: 1.05, entrenchMax: 4, sight: 6, cover: 0.04, color: '#7d7a4c' },
+  desierto:  { name: 'Desierto',       move: 1.3, def: 0.90, atkFront: 1.05, entrenchMax: 3, sight: 7, cover: 0.02, color: '#8c7a52' },
+  jungla:    { name: 'Selva',          move: 2.4, def: 1.60, atkFront: 0.45, entrenchMax: 4, sight: 1, cover: 0.55, color: '#2f4a2a' },
+  tundra:    { name: 'Tundra',         move: 1.4, def: 1.00, atkFront: 0.90, entrenchMax: 2, sight: 6, cover: 0.06, color: '#6b7370' },
+  hielo:     { name: 'Hielo permanente', move: 2.2, def: 1.05, atkFront: 0.70, entrenchMax: 1, sight: 7, cover: 0.03, color: '#aab6bd' },
+  agua:      { name: 'Agua',           move: 99,  def: 1.00, atkFront: 0.00, entrenchMax: 0, sight: 5, cover: 0.00, color: '#26404f' },
 };
+
+/** Terrenos intransitables para fuerzas terrestres. */
+export const IS_WATER = (t) => t === 'agua';
 
 export const WEATHER = {
   despejado: { name: 'Despejado',   move: 1.00, sight: 1.00, air: 1.00, supply: 1.00 },
