@@ -1,5 +1,11 @@
 # Theatrum Belli
 
+> Este repositorio contiene también **[Historia Mundi](historia/README.md)**, un
+> sandbox de historia alternativa con IA al estilo de *Pax Historia*: eliges un
+> país, escribes tus órdenes, negocias con los líderes del mundo y avanzas el
+> tiempo. Se juega en `http://localhost:8080/historia/` (con `npm start`) o
+> abriendo `dist/historia-mundi.html`.
+
 Simulador de guerra a **nivel operacional** que se juega **sobre la Tierra**. Un
 ejército completo —con su cadena de mando, su logística y su aviación— maniobra
 en un teatro de 280 × 150 km recortado de la geografía real del planeta, y todo

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Historia Mundi</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <canvas id="map"></canvas>
+
+  <!-- ── HUD de partida ─────────────────────────────────────────────── -->
+  <header id="hud" class="hidden">
+    <button id="me-badge" class="glass" title="Tu nación">
+      <span class="swatch"></span>
+      <span class="me-text"><b id="me-name"></b><small id="me-leader"></small></span>
+    </button>
+    <div id="datebox" class="glass">
+      <div id="date"></div>
+      <small id="turninfo"></small>
+    </div>
+    <div id="advancebox" class="glass">
+      <select id="jump" title="Cuánto tiempo avanza el mundo"></select>
+      <button id="btn-advance" class="primary">Avanzar ▸</button>
+      <button id="btn-menu" class="icon" title="Menú">☰</button>
+    </div>
+  </header>
+
+  <div id="menu-pop" class="glass pop hidden">
+    <button data-act="save">💾 Guardar partida</button>
+    <button data-act="load">📂 Cargar partida</button>
+    <button data-act="export">⬇ Exportar a archivo</button>
+    <button data-act="rewind">⟲ Rebobinar un turno</button>
+    <button data-act="settings">⚙ Ajustes de IA</button>
+    <button data-act="help">? Cómo se juega</button>
+    <button data-act="quit">⏏ Salir al menú</button>
+  </div>
+
+  <aside id="panel" class="glass hidden">
+    <nav id="tabs">
+      <button data-tab="actions" class="active">Acciones</button>
+      <button data-tab="diplo">Diplomacia</button>
+      <button data-tab="news">Noticias</button>
+      <button data-tab="nation">Nación</button>
+    </nav>
+    <section id="tab-actions" class="tab active">
+      <div class="tab-head">
+        <h3>Órdenes del gobierno</h3>
+        <p class="muted">Escribe lo que quieres que haga tu país. Cualquier cosa: decretos, reformas, campañas militares, tratados, discursos. Todo se resuelve al avanzar el tiempo.</p>
+      </div>
+      <div id="action-list"></div>
+      <div class="composer">
+        <textarea id="action-input" rows="3" placeholder="Ej.: Movilizar el ejército en la frontera oriental y ofrecer a Polonia un pacto de no agresión…"></textarea>
+        <button id="btn-add-action" class="primary">Añadir orden</button>
+      </div>
+      <div id="suggestions"></div>
+    </section>
+    <section id="tab-diplo" class="tab">
+      <div id="diplo-list-view">
+        <div class="tab-head">
+          <h3>Diplomacia</h3>
+          <p class="muted">Abre un canal con cualquier jefe de Estado. Lo que acordéis se aplicará al avanzar el tiempo.</p>
+          <input id="diplo-search" type="search" placeholder="Buscar país…">
+        </div>
+        <div id="diplo-list"></div>
+      </div>
+      <div id="chat-view" class="hidden">
+        <div id="chat-head"></div>
+        <div id="chat-log"></div>
+        <div class="composer">
+          <textarea id="chat-input" rows="2" placeholder="Escribe tu mensaje…"></textarea>
+          <button id="btn-send" class="primary">Enviar</button>
+        </div>
+      </div>
+    </section>
+    <section id="tab-news" class="tab"><div id="news"></div></section>
+    <section id="tab-nation" class="tab"><div id="nation"></div></section>
+  </aside>
+  <button id="panel-toggle" class="glass hidden" title="Mostrar u ocultar el panel">⟩</button>
+
+  <div id="modes" class="glass hidden">
+    <button data-mode="political" class="active" title="Mapa político">Político</button>
+    <button data-mode="diplomatic" title="Relaciones con tu país">Diplomático</button>
+    <button data-mode="alliances" title="Bloques y alianzas">Alianzas</button>
+    <span class="sep"></span>
+    <button id="zoom-in" class="icon" title="Acercar">＋</button>
+    <button id="zoom-out" class="icon" title="Alejar">－</button>
+  </div>
+  <div id="legend" class="glass hidden"></div>
+
+  <div id="tooltip" class="hidden"></div>
+
+  <!-- ── pantallas ──────────────────────────────────────────────────── -->
+  <div id="screen-title" class="screen">
+    <div class="title-card">
+      <div class="logo">HISTORIA<span>MUNDI</span></div>
+      <p class="tagline">Elige una nación. Elige un momento. Reescribe la historia.</p>
+      <div class="title-buttons">
+        <button id="btn-new" class="primary big">Nueva partida</button>
+        <button id="btn-continue" class="big hidden">Continuar</button>
+        <button id="btn-load" class="big">Cargar partida</button>
+        <button id="btn-create" class="big">Crear escenario</button>
+        <button id="btn-import" class="big">Importar archivo</button>
+        <div class="row">
+          <button id="btn-settings">⚙ Ajustes de IA</button>
+          <button id="btn-help">? Cómo se juega</button>
+        </div>
+      </div>
+      <p id="ai-status" class="muted small"></p>
+    </div>
+  </div>
+
+  <div id="screen-scenario" class="screen hidden">
+    <div class="sheet">
+      <button class="back" data-back="title">← Volver</button>
+      <h2>Elige un momento de la historia</h2>
+      <div id="scenario-cards"></div>
+    </div>
+  </div>
+
+  <div id="screen-country" class="hidden">
+    <div id="pick-panel" class="glass">
+      <button class="back" data-back="scenario">← Escenarios</button>
+      <h2 id="pick-title"></h2>
+      <p class="muted">Haz clic en el mapa sobre el país que quieras gobernar, o elige uno de los destacados.</p>
+      <input id="pick-search" type="search" placeholder="Buscar país…">
+      <div id="pick-results"></div>
+      <div id="featured"></div>
+      <div id="pick-info"></div>
+    </div>
+  </div>
+
+  <div id="screen-editor" class="hidden">
+    <div id="edit-panel" class="glass">
+      <button class="back" data-back="title">← Menú</button>
+      <h2>Crear escenario</h2>
+      <p class="muted">Parte de un escenario, pinta provincias con el pincel, funda países nuevos y describe el mundo para el director de juego.</p>
+      <div class="form">
+        <label>Escenario de partida <select id="ed-base"></select></label>
+        <label>Título <input id="ed-title" type="text"></label>
+        <div class="row">
+          <label style="flex:1">Fecha de inicio <input id="ed-date" type="text" placeholder="AAAA-MM-DD"></label>
+        </div>
+        <label>Contexto para la IA <textarea id="ed-context" rows="4"></textarea></label>
+      </div>
+      <h3>Pincel</h3>
+      <div class="row tools">
+        <button class="tool active" data-tool="prov">Provincia</button>
+        <button class="tool" data-tool="country">País entero</button>
+        <button class="tool" data-tool="pick">Cuentagotas</button>
+      </div>
+      <div id="ed-brush"></div>
+      <input id="ed-search" type="search" placeholder="Elegir país para el pincel…">
+      <div id="ed-results"></div>
+      <details id="ed-new">
+        <summary>Fundar un país nuevo</summary>
+        <div class="form">
+          <label>Nombre <input id="ed-nname" type="text" placeholder="Reino de Aragón"></label>
+          <div class="row"><label>Color <input id="ed-ncolor" type="color" value="#c0504d"></label>
+            <label style="flex:1">Líder <input id="ed-nleader" type="text"></label></div>
+          <label>Gobierno <input id="ed-ngov" type="text" placeholder="Monarquía constitucional"></label>
+          <button id="ed-create" class="primary">Fundar y usar como pincel</button>
+        </div>
+      </details>
+      <div class="btn-row" style="margin-top:auto">
+        <button id="ed-save">💾 Guardar escenario</button>
+        <button id="ed-play" class="primary">Jugar ▸</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading" class="screen">
+    <div class="loading-card">
+      <div class="logo small">HISTORIA<span>MUNDI</span></div>
+      <div class="spinner"></div>
+      <p id="loading-text">Trazando las fronteras del mundo…</p>
+    </div>
+  </div>
+
+  <div id="thinking" class="screen hidden">
+    <div class="thinking-card glass">
+      <div class="hourglass">⧗</div>
+      <h3 id="thinking-title"></h3>
+      <p id="thinking-text" class="muted"></p>
+    </div>
+  </div>
+
+  <div id="modal" class="screen hidden">
+    <div class="modal-card glass">
+      <button class="close" id="modal-close">×</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <div id="toasts"></div>
+  <input id="file-input" type="file" accept=".json,application/json" class="hidden">
+</div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

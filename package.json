@@ -7,7 +7,9 @@
     "start": "python3 serve.py",
     "test": "node test/selftest.js",
     "build": "node build.js",
-    "geodata": "python3 tools/extract-geo.py"
+    "geodata": "python3 tools/extract-geo.py",
+    "historia:test": "node historia/test/selftest.js",
+    "historia:build": "node historia/build.js"
   },
   "license": "MIT"
 }
